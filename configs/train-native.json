@@ -1,0 +1,14 @@
+{
+  "steps": 30000,
+  "batch_size": 4,
+  "accumulation": 2,
+  "learning_rate": 0.0002,
+  "weight_decay": 0.00001,
+  "train_iterations": 16,
+  "gradient_clip": 1.0,
+  "horizontal_flip": true,
+  "vertical_flip": true,
+  "workers": 0,
+  "log_every": 50,
+  "save_every": 1000
+}

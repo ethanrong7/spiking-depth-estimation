@@ -1,0 +1,18 @@
+# Install the PyTorch build appropriate for your CPU/CUDA environment first.
+torch>=2.6,<3
+torchvision>=0.21,<1
+numpy>=1.24,<3
+spikingjelly==0.0.0.0.14
+opencv-python>=4.8,<5
+scipy>=1.10,<2
+matplotlib>=3.7,<4
+pandas>=2,<3
+imageio>=2.30,<3
+scikit-image>=0.21,<1
+prefetch_generator==1.0.3
+tensorboard>=2.15,<3
+einops>=0.6,<1
+timm>=0.9,<2
+h5py>=3.8,<4
+Pillow>=10,<12
+tqdm>=4.65,<5
