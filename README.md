@@ -531,6 +531,34 @@ For deployment without Git metadata, include a `deployment-source.json` recordin
 the originating checkout's `revision`, `status` and `diff`. The run also archives
 the deployed source, including uncommitted adapter files.
 
+Evaluate a completed checkpoint on the authorized CUDA machine:
+
+```bash
+python evaluate_nmrf.py --data-root "$SPIKE_DATA_ROOT" \
+  --checkpoint "$SPIKE_OUTPUT_ROOT/nmrf-pilot-10k/checkpoint-last.pt" \
+  --output "$SPIKE_OUTPUT_ROOT/nmrf-evaluation-10k"
+```
+
+The evaluator uses the training run's saved split, evaluates every development
+pair and one fixed pair per training scene, and compares centered 128×256 crops
+with full native images without resizing. It reports pixel-weighted EPE,
+bad1/bad3 percentages, scene summaries and diagnostic arrays for fixed examples
+and the worst frame. The primary mask uses the training disparity range; separate
+results cover all dataset-valid pixels and geometrically in-view matches. The
+latter is not a ground-truth occlusion mask. `--limit 1` runs a small GPU check.
+Native predictions are also scored on the identical center pixels used in crop
+evaluation, separating a change in evaluated image area from a context effect.
+Use `--splits dev --geometries native` for this focused diagnostic.
+No optimizer steps are performed, and the confirmation split is not evaluated.
+
+Batch-one FP32 inference timing excludes data loading and transfers. A second
+instrumented pass measures disjoint module intervals; unassigned time includes
+correlation construction and tensor operations outside those modules. These
+timings and allocated/reserved VRAM are not FLOPs or energy measurements.
+Evaluation settings, selected rows, training configuration and evaluator source
+are saved outside Git. When evaluating an older run, use its archived model source
+and place the evaluator beside that source so checkpoint behavior stays fixed.
+
 ### Placement B mechanism controls
 
 The [B mechanism implementation](projects/snn-depth-estimation/experiments/b-attention-mechanism-v1/README.md)
@@ -549,6 +577,46 @@ instructions. The NPU backend/launcher still needs implementation. Default sourc
 packaging uses this checkout without an old repository or archive; the study must
 train its own NPU references. Dataset files and an assigned Ascend environment
 remain external inputs.
+
+### Spike-driven NMRF backbone pilot
+
+[`spiking_nmrf.py`](spiking_nmrf.py) implements a custom hierarchical backbone
+inspired by [Spike-driven Transformer (NeurIPS 2023)](https://arxiv.org/abs/2307.01694).
+It uses SDSA version 1 (spike Q/K overlap, spatial summation, spiking channel gate,
+masked V), membrane residuals and LIF neurons with an ATan surrogate. It is an
+independent implementation, not a reproduction of the published classifier.
+
+The 50 sensor bins become five ordered ten-bin chunks. A shared 10→64→96
+convolutional stem downsamples to quarter resolution; two 96-channel SDSA blocks
+are followed by a stride-two 96→128 convolution and two 128-channel blocks.
+Each block has four heads and a 2× spiking FFN. Neuron states persist across the
+five chunks but reset per forward; the two camera views have independent states.
+Time-averaged output spikes pass through continuous 1×1 readouts to **256**
+channels at quarter/eighth resolution, matching the active NMRF configuration.
+Disparity proposals, geometric attention, losses and refinement remain unchanged.
+
+`run_spiking_nmrf.py` starts from a fresh initialization. It uses FP32 and native
+auxiliary losses, records spike activity and CUDA memory, and saves the source,
+architecture, split and checkpoints outside Git. The benchmark includes backward,
+optimizer state and a native-frame validation pass. Periodic validation uses six
+fixed development scenes; final validation uses all 60 development pairs.
+
+```bash
+python run_spiking_nmrf.py preflight --device cpu \
+  --data-root "$SPIKE_DATA_ROOT" --output "$SPIKE_OUTPUT_ROOT/sdsa-cpu"
+python run_spiking_nmrf.py benchmark --batch-size 2 --workers 2 \
+  --data-root "$SPIKE_DATA_ROOT" --output "$SPIKE_OUTPUT_ROOT/sdsa-capacity"
+# Choose batch size from the measured device headroom before launching training.
+python run_spiking_nmrf.py train --steps 2000 --batch-size 2 --workers 2 \
+  --data-root "$SPIKE_DATA_ROOT" --output "$SPIKE_OUTPUT_ROOT/sdsa-pilot"
+```
+
+Training crops default to 128×256. Resume requires the same model and scheduler
+horizon; sampler/crop RNG restarts from the seed. This GPU implementation simulates
+spikes with dense PyTorch operations: activity counts are not measured energy
+savings. The 3070 CUDA-11.8 environment is separate from a Blackwell-capable 5090
+environment. The existing `evaluate_nmrf.py` CLI loads the continuous parent;
+use this pilot runner's validation path for spiking-backbone checkpoints.
 
 ### Retained experiment code
 
