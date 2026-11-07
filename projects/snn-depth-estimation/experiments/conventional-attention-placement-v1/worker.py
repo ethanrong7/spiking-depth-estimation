@@ -8,7 +8,7 @@ PROJECT=Path(__file__).resolve().parents[2]
 MANIFEST_SHA='bad4369b6fd8b0cdf871a20b1727c2d9b59733a16bd33f75904227bdfef4510a'
 EVALS=[0,250,500,1000,1500,2500]+list(range(5000,30001,2500))
 
-def main(*, seed=1234, model_install=None, prefetch_factory=Prefetch, config_extension=None, input_pipeline=None):
+def main(*, seed=1234, model_install=None, prefetch_factory=Prefetch, config_extension=None, input_pipeline=None, strict_determinism=True):
     p=argparse.ArgumentParser(description=__doc__)
     for key in ('data-root','manifest','root'):p.add_argument('--'+key,type=Path,required=True)
     p.add_argument('--stop-at',type=int,default=30000);p.add_argument('--arm',choices=('A','B'),required=True);p.add_argument('--preflight',action='store_true');a=p.parse_args()
@@ -29,7 +29,9 @@ def main(*, seed=1234, model_install=None, prefetch_factory=Prefetch, config_ext
     for rel,digest in registry['source_files'].items():assert hashlib.sha256((PROJECT.parents[1]/rel).read_bytes()).hexdigest()==digest
     a.root.mkdir(parents=True,exist_ok=True);outdir=a.root/a.arm;outdir.mkdir(exist_ok=True)
     random.seed(seed);np.random.seed(seed);torch.manual_seed(seed);torch.cuda.manual_seed_all(seed)
-    torch.backends.cudnn.benchmark=False;torch.backends.cudnn.deterministic=True;torch.backends.cuda.matmul.allow_tf32=False;torch.backends.cudnn.allow_tf32=True
+    torch.backends.cudnn.benchmark=False;torch.backends.cudnn.deterministic=strict_determinism;torch.backends.cuda.matmul.allow_tf32=False;torch.backends.cudnn.allow_tf32=True
+    if not strict_determinism:
+        torch.use_deterministic_algorithms(False)
     assert str(torch.cuda.get_device_properties(0).uuid).removeprefix('GPU-')==os.environ['PLACEMENT_GPU_UUID'].removeprefix('GPU-')
     model=install(driver.build_model('original',seed),a.arm).cuda()
     optimizer=torch.optim.AdamW(model.parameters(),lr=2e-4,weight_decay=1e-5,eps=1e-8)
@@ -60,6 +62,9 @@ def main(*, seed=1234, model_install=None, prefetch_factory=Prefetch, config_ext
         assert shared_hash()=='2085df6ea20073c3a9804d79f6baee94e8e9bfe41facda47e3f292fd3cc9394d'
     config=dict(study='conventional-attention-placement-v1',coding='unbounded_linear_QKV_after_LayerNorm',arm=a.arm,seed=seed,updates=steps,schedule_total=30000,effective_batch=8,physical_batch=4,augmentation='hv',eval_updates=evals,prefetch_depth=2,prefetch_threads=1,manifest_sha256=MANIFEST_SHA)
     if config_extension:config.update(config_extension)
+    if not strict_determinism:
+        config['execution'] = dict(deterministic_algorithms=False, cudnn_deterministic=False,
+                                   cudnn_benchmark=False)
     if input_pipeline is not None:
         config['input_pipeline']={k:input_pipeline.metadata[k] for k in ('mode','budget_bytes','workers','prefetch_depth','spike_host_dtype')}
     def status(phase):atomic_json(outdir/'status.json',dict(phase=phase,update=completed,pid=os.getpid(),updated_utc=datetime.now(timezone.utc).isoformat()))

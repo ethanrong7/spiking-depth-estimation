@@ -61,6 +61,11 @@
   "loader_seed_offset": 991,
   "augmentation": "deterministic_hv_by_seed_and_presentation",
   "sampling": "seeded_single_permutation_cycled",
+  "execution": {
+    "deterministic_algorithms": false,
+    "cudnn_deterministic": false,
+    "cudnn_benchmark": false
+  },
   "primary_metric": "mean_scene_epe",
   "practical_band_px": 0.05,
   "npu_model": null,

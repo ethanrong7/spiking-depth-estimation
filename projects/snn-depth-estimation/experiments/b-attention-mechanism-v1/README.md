@@ -74,3 +74,20 @@ See [INPUT_PIPELINE.md](INPUT_PIPELINE.md) for the optional RAM preload and comp
 batch-preparation path. It preserves paired training inputs and can feed the
 existing accelerator compatibility layer. Enable with `B_ATTENTION_INPUT_MODE=preload`
 and a configured host-memory budget; NPU throughput is not yet measured.
+
+## Device determinism
+
+The B worker disables strict device determinism for all four variants:
+`torch.use_deterministic_algorithms(False)` and
+`torch.backends.cudnn.deterministic=False`. Seeds, initialization, sample order,
+augmentation, precision and the learning-rate schedule remain unchanged.
+cuDNN benchmarking remains off so this change isolates the determinism setting.
+The execution settings are recorded in run configuration and checkpoints.
+
+Use the updated source package for new runs; this does not modify running jobs.
+Existing checkpoint configuration/source checks remain in place, so an old run
+cannot silently resume under the changed execution policy. On Huawei, confirm
+that the installed compatibility layer honors the PyTorch setting and that the
+site launcher does not separately force deterministic NPU kernels. No NPU
+throughput improvement has been measured locally. Compare steady-state seconds
+per step with the same policy across all variants.

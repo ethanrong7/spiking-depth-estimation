@@ -27,6 +27,7 @@ def main():
     return worker.main(
         **pipeline_options,
         seed=args.seed,
+        strict_determinism=False,
         model_install=partial(install, variant=args.variant, seed=args.seed),
         prefetch_factory=partial(contract.Prefetch, seed=args.seed),
         config_extension=dict(study='b-attention-mechanism-v1',
