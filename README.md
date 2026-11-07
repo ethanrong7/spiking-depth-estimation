@@ -423,6 +423,114 @@ Choose a different `--model` for a new experiment. The default config uses 30,00
 
 This fresh harness reuses the current models and losses; it is not an exact replay of the historical training order, augmentation seeds, frozen source versions or run protocol. New results need their own measurements. Commit the chosen code/configuration before a real cluster run to give it an exact revision.
 
+### NMRF with native 50-bin input
+
+The official NMRF source is pinned under
+[`vendor/nmrf`](projects/snn-depth-estimation/vendor/nmrf/UPSTREAM.md).
+[`nmrf_runtime.py`](nmrf_runtime.py) widens the CNN's first convolution from
+3 to 50 channels. All sensor bins retain their temporal order; binary input is
+normalized to −1/+1 through the original encoder. The proposal network,
+attention, refinement and geometric operations remain continuous. This is the
+continuous spike-input parent, not a spiking-neuron conversion.
+
+Install the appropriate CPU/CUDA PyTorch build, then the additional requirements:
+
+For the RTX 3070 (Ampere, SM 8.6) and RTX 5090 (Blackwell, SM 12.0), use separate
+environments with a common supported baseline where possible: Python 3.10/3.11
+and **PyTorch 2.8.0 + CUDA 12.8**. Install the GPU wheel explicitly on Windows or
+Linux before installing the requirements:
+
+```bash
+python -m pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cu128
+python -m pip install -r requirements-nmrf.txt
+```
+
+This is a compatibility baseline, not the newest release or a completed GPU
+validation. Blackwell support arrived with PyTorch 2.7/CUDA 12.8; do not reuse an
+older CUDA 11.x/12.6 environment for the 5090. Both machines need NVIDIA drivers
+compatible with the selected wheel. The CUDA version displayed by `nvidia-smi`
+describes driver capability; `torch.version.cuda` identifies PyTorch's build.
+For an Ampere machine still on a CUDA-11-era driver, an isolated
+`torch==2.7.1` installation from `https://download.pytorch.org/whl/cu118` is an
+alternative to a driver upgrade, subject to a successful GPU preflight under
+[CUDA minor-version compatibility](https://docs.nvidia.com/cuda/archive/11.8.0/cuda-toolkit-release-notes/).
+This fallback does not apply to Blackwell.
+Sources: [PyTorch Blackwell support](https://pytorch.org/blog/pytorch-2-7/),
+[official wheel commands](https://pytorch.org/get-started/previous-versions/),
+[NVIDIA architectures](https://developer.nvidia.com/cuda/gpus).
+
+The chosen CNN NMRF path uses PyTorch operators and does not build the optional
+Swin deformable-attention CUDA extension. Do not copy compiled extensions or
+virtual environments between machines; transfer source and state-dict checkpoints.
+Run the native-data forward/backward preflight on each GPU before training.
+The runner records GPU architecture, VRAM, driver, PyTorch/CUDA/cuDNN versions,
+TF32 flags and CUDA peak allocated memory. A CPU preflight does not validate CUDA.
+On the 3070 start with batch size 1 and a small crop, then measure memory before
+increasing resolution; system RAM and GPU VRAM are separate limits. Hold input
+shape, precision and model settings fixed for cross-device accuracy comparisons,
+and measure latency/energy comparisons on the same GPU.
+
+```bash
+python -m pip install -r requirements-nmrf.txt
+python run_nmrf.py preflight --device cpu \
+  --data-root "$SPIKE_DATA_ROOT" --crop 32 64 \
+  --output "$SPIKE_OUTPUT_ROOT/nmrf-preflight-cpu"
+```
+
+The preflight uses the first **Train** row of the existing Synthetic manifest,
+loads all 50 bins, and checks a crop's forward pass, losses, gradients into every
+input channel, one optimizer update, and evaluation padding/unpadding. Passing
+it establishes executability on native data, not trained accuracy or full-frame
+GPU memory requirements. Omit `--crop` on CUDA to check native resolution.
+
+For a fresh 10,000-optimizer-step feasibility pilot on an authorized GPU:
+
+```bash
+python run_nmrf.py preflight --device cuda \
+  --data-root "$SPIKE_DATA_ROOT" --crop 128 256 \
+  --output "$SPIKE_OUTPUT_ROOT/nmrf-preflight-gpu"
+python run_nmrf.py train --device cuda --steps 10000 \
+  --data-root "$SPIKE_DATA_ROOT" --crop 128 256 \
+  --batch-size 1 --accumulation 1 \
+  --output "$SPIKE_OUTPUT_ROOT/nmrf-pilot-10k"
+```
+
+These are pilot settings, not a claim that the model fits any particular 8 GB
+machine. Verify GPU availability and memory with the preflight before training.
+Use `--workers 2` to overlap data loading with GPU work. The `benchmark` command
+accepts the same training arguments and measures examples/second, optimizer
+steps/second, allocated/reserved GPU memory and total device usage after warmup
+(`--benchmark-warmup 3 --benchmark-steps 10` by default). Benchmark candidate
+batch sizes sequentially on an otherwise idle training GPU; retain headroom for
+the display and CUDA workspace. More memory use alone does not imply more speed.
+
+To continue a pilot, pass `--resume /path/to/checkpoint-last.pt` and a new output
+directory, retaining the original `--steps` schedule length. The runner restores
+model, optimizer and scheduler state; sampling/crop RNG restarts from the seed,
+so continuation is not bitwise equivalent to an uninterrupted run. A changed
+batch size is a changed training recipe: it increases examples per optimizer
+step and is recorded with the parent run configuration. Benchmark updates are
+discarded and never overwrite the supplied checkpoint.
+
+The runner uses FP32, AdamW, a 10k-step OneCycle schedule, matched spatial crops
+without resizing, the upstream model dimensions/layer counts, and all auxiliary
+losses. NMRF uses positive disparity; the adapter reverses the portable loader's
+negative-flow convention. The upstream proposal search is 320 px and its final
+supervision mask is below 192 px; this is not the existing runner's 512 px mask.
+Padded labels are excluded. No RGB pretraining or photometric augmentation is used.
+
+The wrapper explicitly fixes an upstream loss-key mismatch (`proposal_disp`
+versus `loss_prop`) so proposal supervision contributes to optimization. All
+vendored source bytes remain unchanged. The upstream launcher targets RGB stereo
+datasets; this runner supplies native-data loading independently.
+Configuration, manifest, Git revision/status, exact source archive,
+metrics, optimizer state and the latest checkpoint are written outside Git to
+`--output`. The pilot records training loss; it does not report held-out accuracy
+or reproduce the published NMRF results. Fresh output directories are required.
+For deployment without Git metadata, include a `deployment-source.json` recording
+the originating checkout's `revision`, `status` and `diff`. The run also archives
+the deployed source, including uncommitted adapter files.
+
 ### Retained experiment code
 
 These files preserve additional architectures, controls and probes. Older campaign entry points can depend on frozen source capsules, registrations, old configurations or checkpoints that were deliberately excluded. They are retained as implementation source, not as ready-to-resume old jobs. Use the fresh runner for the listed model families; adapt another experiment's configuration explicitly before running it. No old cluster controller is enabled by the new entry point.

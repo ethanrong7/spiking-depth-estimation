@@ -9,6 +9,8 @@ venv/
 !.env.example
 *.local.*
 data/
+!projects/snn-depth-estimation/vendor/nmrf/nmrf/data/
+!projects/snn-depth-estimation/vendor/nmrf/nmrf/data/*.py
 datasets/
 checkpoints/
 weights/

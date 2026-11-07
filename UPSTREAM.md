@@ -11,3 +11,10 @@ The SpikeStereoNet implementation originated from:
 The imported current implementation includes later local extensions and is not a byte-identical upstream checkout. The portable `runtime.py` / `run.py` wrapper is new. Copied model files retain their original bytes.
 
 Vendored baselines retain their individual LICENSE and UPSTREAM files under `projects/snn-depth-estimation/vendor/`. Their licenses apply separately, including the noncommercial S2M2 license. Inspired/reconstructed model names do not imply official authorship or published-system reproduction.
+
+NMRF was added from the official repository at commit
+`a50bd8f407ae481c38f95cf141e1b5256e962cb7` (MIT). See
+`projects/snn-depth-estimation/vendor/nmrf/UPSTREAM.md` for import scope.
+The separate `nmrf_runtime.py` adapter widens its CNN input to 50 sensor bins
+and corrects a proposal-loss weight lookup; it does not convert the reasoning
+network to spiking neurons.
