@@ -496,3 +496,11 @@ provide the paired EPE/bad3 table, learning curves, scene deltas and factorial
 interpretation, including negative or inconsistent outcomes. Distinguish an early
 mechanism screen from later confirmation; completion does not require running
 every catalog cell to 30k.
+
+## Optional input-side optimization
+
+[INPUT_PIPELINE.md](INPUT_PIPELINE.md) documents the RAM cache, compact uint8
+spike transfers and ordered CPU batch preparation. These changes preserve the
+scientific input stream and remain opt-in. Record the chosen mode per run and
+verify the target NPU's uint8 transfer/cast path in preflight. Compare consumer
+wait and wall time before concluding that input loading explains low utilization.

@@ -67,3 +67,10 @@ handoff. Keep checkpoints outside Git. The initial endpoint is fixed-5k Dev mean
 and per-scene paired differences. Keep the 30k LR schedule when pausing; longer
 training and fixed-30k confirmation are conditional. The NPU launcher still needs
 an explicit stage-budget/resume option.
+
+## Input preloading
+
+See [INPUT_PIPELINE.md](INPUT_PIPELINE.md) for the optional RAM preload and compact
+batch-preparation path. It preserves paired training inputs and can feed the
+existing accelerator compatibility layer. Enable with `B_ATTENTION_INPUT_MODE=preload`
+and a configured host-memory budget; NPU throughput is not yet measured.

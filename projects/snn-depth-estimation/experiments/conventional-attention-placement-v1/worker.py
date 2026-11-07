@@ -8,7 +8,7 @@ PROJECT=Path(__file__).resolve().parents[2]
 MANIFEST_SHA='bad4369b6fd8b0cdf871a20b1727c2d9b59733a16bd33f75904227bdfef4510a'
 EVALS=[0,250,500,1000,1500,2500]+list(range(5000,30001,2500))
 
-def main(*, seed=1234, model_install=None, prefetch_factory=Prefetch, config_extension=None):
+def main(*, seed=1234, model_install=None, prefetch_factory=Prefetch, config_extension=None, input_pipeline=None):
     p=argparse.ArgumentParser(description=__doc__)
     for key in ('data-root','manifest','root'):p.add_argument('--'+key,type=Path,required=True)
     p.add_argument('--stop-at',type=int,default=30000);p.add_argument('--arm',choices=('A','B'),required=True);p.add_argument('--preflight',action='store_true');a=p.parse_args()
@@ -34,7 +34,13 @@ def main(*, seed=1234, model_install=None, prefetch_factory=Prefetch, config_ext
     model=install(driver.build_model('original',seed),a.arm).cuda()
     optimizer=torch.optim.AdamW(model.parameters(),lr=2e-4,weight_decay=1e-5,eps=1e-8)
     scheduler=torch.optim.lr_scheduler.OneCycleLR(optimizer,max_lr=2e-4,total_steps=30000,pct_start=.01,cycle_momentum=False,anneal_strategy='linear')
-    train=driver.ManifestDataset(a.data_root,manifest['train']);dev=driver.ManifestDataset(a.data_root,manifest['dev'][:2] if a.preflight else manifest['dev'])
+    dev_rows=manifest['dev'][:2] if a.preflight else manifest['dev']
+    if input_pipeline is None:
+        train=driver.ManifestDataset(a.data_root,manifest['train']);dev=driver.ManifestDataset(a.data_root,dev_rows)
+    else:
+        train,dev=input_pipeline.datasets(a.data_root,manifest['train'],dev_rows,a.preflight)
+        prefetch_factory=input_pipeline.prefetch
+        atomic_json(outdir/'input-pipeline.json',input_pipeline.metadata)
     loader=DataLoader(dev,batch_size=2,num_workers=0,generator=torch.Generator().manual_seed(seed+991))
     order=torch.randperm(960,generator=torch.Generator().manual_seed(seed)).tolist();steps=3 if a.preflight else 30000;evals=[0,2] if a.preflight else EVALS
     prior_peak_reserved=0.;prior_peak_allocated=0.;completed=0;evaluated=set();stop=[False];checkpoint_path=outdir/'last.pt';started=time.monotonic()
@@ -54,6 +60,8 @@ def main(*, seed=1234, model_install=None, prefetch_factory=Prefetch, config_ext
         assert shared_hash()=='2085df6ea20073c3a9804d79f6baee94e8e9bfe41facda47e3f292fd3cc9394d'
     config=dict(study='conventional-attention-placement-v1',coding='unbounded_linear_QKV_after_LayerNorm',arm=a.arm,seed=seed,updates=steps,schedule_total=30000,effective_batch=8,physical_batch=4,augmentation='hv',eval_updates=evals,prefetch_depth=2,prefetch_threads=1,manifest_sha256=MANIFEST_SHA)
     if config_extension:config.update(config_extension)
+    if input_pipeline is not None:
+        config['input_pipeline']={k:input_pipeline.metadata[k] for k in ('mode','budget_bytes','workers','prefetch_depth','spike_host_dtype')}
     def status(phase):atomic_json(outdir/'status.json',dict(phase=phase,update=completed,pid=os.getpid(),updated_utc=datetime.now(timezone.utc).isoformat()))
     def checkpoint():
         driver.reset_model(model);optimizer.zero_grad(set_to_none=True)
@@ -89,6 +97,7 @@ def main(*, seed=1234, model_install=None, prefetch_factory=Prefetch, config_ext
             status('validation');model.eval();frames=[]
             for left,right,target,valid,indices in loader:
                 left,right,target,valid=[v.cuda() for v in (left,right,target,valid)]
+                left,right=left.float(),right.float()
                 output=None
                 if True:pred=driver.forward(model,left,right,32)
                 else:output=model(left,right);pred=output['flow']
@@ -116,15 +125,26 @@ def main(*, seed=1234, model_install=None, prefetch_factory=Prefetch, config_ext
             with phase_lock(a.root,a.arm,False,lambda:torch.cuda.empty_cache() if list(a.root.glob('validation-*.request')) else None):
                 tick=time.monotonic();model.train()
                 if True:model.freeze_bn()
-                optimizer.zero_grad(set_to_none=True);items=batch['items']
-                target=torch.stack([r[2] for r in items]);valid=torch.stack([r[3] for r in items])[:,None]
-                x=torch.arange(target.shape[-1])[None,None,None];inside=valid&(x+target>=0)&(x+target<=target.shape[-1]-1)
-                counts=dict(initial=int(inside.sum()),valid=int(valid.sum()),correspondence=int(F.pad(inside,InputPadder(target.shape,divis_by=32)._pad)[...,::4,::4].sum()))
+                optimizer.zero_grad(set_to_none=True);items=batch.get('items')
+                if 'microbatches' in batch:
+                    counts=dict(valid=batch['valid_count'])
+                else:
+                    target=torch.stack([r[2] for r in items]);valid=torch.stack([r[3] for r in items])[:,None]
+                    x=torch.arange(target.shape[-1])[None,None,None];inside=valid&(x+target>=0)&(x+target<=target.shape[-1]-1)
+                    counts=dict(initial=int(inside.sum()),valid=int(valid.sum()),correspondence=int(F.pad(inside,InputPadder(target.shape,divis_by=32)._pad)[...,::4,::4].sum()))
                 total=0.;parts_sum={};activity=None
                 for offset in (0,4):
-                    micro=items[offset:offset+4];left,right,target,valid=[torch.stack([r[j] for r in micro]).cuda() for j in range(4)]
+                    if 'microbatches' in batch:
+                        micro=batch['microbatches'][offset//4]
+                        left,right,target,valid=[v.cuda() for v in micro['tensors']]
+                        micro_valid_count=micro['valid_count']
+                    else:
+                        micro=items[offset:offset+4];left,right,target,valid=[torch.stack([r[j] for r in micro]).cuda() for j in range(4)]
+                        micro_valid_count=int(valid.sum())
+                    # Convert on the accelerator, before 2*spikes-1 in native forward.
+                    left,right=left.float(),right.float()
                     if True:
-                        preds,spikes,volts=driver.forward(model,left,right,16,True);loss=driver.disparity_loss(preds,target,valid)*int(valid.sum())/counts['valid'];del preds,spikes,volts
+                        preds,spikes,volts=driver.forward(model,left,right,16,True);loss=driver.disparity_loss(preds,target,valid)*micro_valid_count/counts['valid'];del preds,spikes,volts
                     else:
                         output=model(left,right);loss,parts=s2m2_v2_loss(output,target,valid,counts);activity=float(output['activity'])
                         for key in ('full_l1','initial_l1','correspondence_ce'):parts_sum[key]=parts_sum.get(key,0)+float(parts[key].detach())
@@ -139,7 +159,7 @@ def main(*, seed=1234, model_install=None, prefetch_factory=Prefetch, config_ext
                 if q_gradient is not None:assert np.isfinite(q_gradient) and q_gradient>0
                 norm=float(torch.nn.utils.clip_grad_norm_(model.parameters(),1.));assert np.isfinite(norm) and norm>0
                 lr=optimizer.param_groups[0]['lr'];optimizer.step();scheduler.step();optimizer.zero_grad(set_to_none=True);torch.cuda.synchronize();completed+=1
-                append(outdir/'train.jsonl',dict(update=completed,samples_seen=completed*8,indices=batch['indices'],augmentation_hv=batch['flags'],loss=total,**parts_sum,gradient_norm=norm,final_qk_gradient=q_gradient,placement_gradients=gradients,lr_used=lr,lr_next=scheduler.get_last_lr()[0],spike_activity=activity,seconds=time.monotonic()-tick,consumer_wait_seconds=consumer_wait,decode_seconds=batch['decode_seconds'],peak_allocated_mib=torch.cuda.max_memory_allocated()/2**20,resident_allocated_mib=torch.cuda.memory_allocated()/2**20))
+                append(outdir/'train.jsonl',dict(update=completed,samples_seen=completed*8,indices=batch['indices'],augmentation_hv=batch['flags'],loss=total,**parts_sum,gradient_norm=norm,final_qk_gradient=q_gradient,placement_gradients=gradients,lr_used=lr,lr_next=scheduler.get_last_lr()[0],spike_activity=activity,seconds=time.monotonic()-tick,consumer_wait_seconds=consumer_wait,decode_seconds=batch['decode_seconds'],input_prepare_seconds=batch.get('input_prepare_seconds'),host_batch_bytes=batch.get('host_batch_bytes'),peak_allocated_mib=torch.cuda.max_memory_allocated()/2**20,resident_allocated_mib=torch.cuda.memory_allocated()/2**20))
                 del items,batch
             if completed%50==0:checkpoint()
             if completed in evals and completed not in evaluated:evaluate()
