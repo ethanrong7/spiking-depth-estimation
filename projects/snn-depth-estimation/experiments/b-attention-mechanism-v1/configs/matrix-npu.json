@@ -1,0 +1,57 @@
+{
+  "study": "b-attention-mechanism-v1",
+  "backend": "npu",
+  "status": "PORT_REQUIRED_NOT_SUBMITTED",
+  "source_mode": "fresh_standalone_checkout",
+  "historical_cuda_endpoints": "context_only_no_reuse",
+  "runs": [
+    {
+      "seed": 1234,
+      "variant": "linear-identity",
+      "stage": "fresh",
+      "updates": 30000
+    },
+    {
+      "seed": 1234,
+      "variant": "signed-surrogate",
+      "stage": "fresh",
+      "updates": 30000
+    },
+    {
+      "seed": 1234,
+      "variant": "linear-surrogate",
+      "stage": "fresh",
+      "updates": 30000
+    },
+    {
+      "seed": 1234,
+      "variant": "signed-identity",
+      "stage": "fresh",
+      "updates": 30000
+    },
+    {
+      "seed": 2345,
+      "variant": "linear-identity",
+      "stage": "fresh",
+      "updates": 30000
+    },
+    {
+      "seed": 2345,
+      "variant": "signed-surrogate",
+      "stage": "fresh",
+      "updates": 30000
+    },
+    {
+      "seed": 2345,
+      "variant": "linear-surrogate",
+      "stage": "fresh",
+      "updates": 30000
+    },
+    {
+      "seed": 2345,
+      "variant": "signed-identity",
+      "stage": "fresh",
+      "updates": 30000
+    }
+  ]
+}

@@ -8,7 +8,7 @@ PROJECT=Path(__file__).resolve().parents[2]
 MANIFEST_SHA='bad4369b6fd8b0cdf871a20b1727c2d9b59733a16bd33f75904227bdfef4510a'
 EVALS=[0,250,500,1000,1500,2500]+list(range(5000,30001,2500))
 
-def main():
+def main(*, seed=1234, model_install=None, prefetch_factory=Prefetch, config_extension=None):
     p=argparse.ArgumentParser(description=__doc__)
     for key in ('data-root','manifest','root'):p.add_argument('--'+key,type=Path,required=True)
     p.add_argument('--stop-at',type=int,default=30000);p.add_argument('--arm',choices=('A','B'),required=True);p.add_argument('--preflight',action='store_true');a=p.parse_args()
@@ -23,19 +23,20 @@ def main():
     sys.path.insert(0,str(PROJECT));driver_path=PROJECT/'experiments/spiking-transformer-stereo/scripts/run_experiment.py';sys.path.insert(0,str(driver_path.parent))
     spec=importlib.util.spec_from_file_location('shared_native_driver',driver_path);driver=importlib.util.module_from_spec(spec);spec.loader.exec_module(driver)
     from core.conventional_attention_placement import install
+    if model_install is not None:install=model_install
     from core.utils.utils import InputPadder
     registry=json.loads((PROJECT.parents[1]/'source-registry.json').read_text())
     for rel,digest in registry['source_files'].items():assert hashlib.sha256((PROJECT.parents[1]/rel).read_bytes()).hexdigest()==digest
     a.root.mkdir(parents=True,exist_ok=True);outdir=a.root/a.arm;outdir.mkdir(exist_ok=True)
-    random.seed(1234);np.random.seed(1234);torch.manual_seed(1234);torch.cuda.manual_seed_all(1234)
+    random.seed(seed);np.random.seed(seed);torch.manual_seed(seed);torch.cuda.manual_seed_all(seed)
     torch.backends.cudnn.benchmark=False;torch.backends.cudnn.deterministic=True;torch.backends.cuda.matmul.allow_tf32=False;torch.backends.cudnn.allow_tf32=True
     assert str(torch.cuda.get_device_properties(0).uuid).removeprefix('GPU-')==os.environ['PLACEMENT_GPU_UUID'].removeprefix('GPU-')
-    model=install(driver.build_model('original',1234),a.arm).cuda()
+    model=install(driver.build_model('original',seed),a.arm).cuda()
     optimizer=torch.optim.AdamW(model.parameters(),lr=2e-4,weight_decay=1e-5,eps=1e-8)
     scheduler=torch.optim.lr_scheduler.OneCycleLR(optimizer,max_lr=2e-4,total_steps=30000,pct_start=.01,cycle_momentum=False,anneal_strategy='linear')
     train=driver.ManifestDataset(a.data_root,manifest['train']);dev=driver.ManifestDataset(a.data_root,manifest['dev'][:2] if a.preflight else manifest['dev'])
-    loader=DataLoader(dev,batch_size=2,num_workers=0,generator=torch.Generator().manual_seed(2225))
-    order=torch.randperm(960,generator=torch.Generator().manual_seed(1234)).tolist();steps=3 if a.preflight else 30000;evals=[0,2] if a.preflight else EVALS
+    loader=DataLoader(dev,batch_size=2,num_workers=0,generator=torch.Generator().manual_seed(seed+991))
+    order=torch.randperm(960,generator=torch.Generator().manual_seed(seed)).tolist();steps=3 if a.preflight else 30000;evals=[0,2] if a.preflight else EVALS
     prior_peak_reserved=0.;prior_peak_allocated=0.;completed=0;evaluated=set();stop=[False];checkpoint_path=outdir/'last.pt';started=time.monotonic()
     signal.signal(signal.SIGTERM,lambda *args:stop.__setitem__(0,True));signal.signal(signal.SIGUSR1,lambda *args:stop.__setitem__(0,True))
     def state_hash():
@@ -48,9 +49,11 @@ def main():
             if n.startswith(('fnet.','cnet.','context_zqr_convs.')):h.update(n.encode());h.update(v.detach().cpu().contiguous().numpy().tobytes())
         return h.hexdigest()
     historical_initial={'A':'988bf97b1129ba65476bad0332307d301a77d3d86e0a51350e0c6b42c7473853','B':'b37335857fd34f9f5aaa1cf203f906304f7edbd965447ff7dad3953172d47bd4'}
-    assert state_hash()==historical_initial[a.arm], 'Historical full-model initialization mismatch'
-    assert shared_hash()=='2085df6ea20073c3a9804d79f6baee94e8e9bfe41facda47e3f292fd3cc9394d'
-    config=dict(study='conventional-attention-placement-v1',coding='unbounded_linear_QKV_after_LayerNorm',arm=a.arm,seed=1234,updates=steps,schedule_total=30000,effective_batch=8,physical_batch=4,augmentation='hv',eval_updates=evals,prefetch_depth=2,prefetch_threads=1,manifest_sha256=MANIFEST_SHA)
+    if seed==1234:
+        assert state_hash()==historical_initial[a.arm], 'Historical full-model initialization mismatch'
+        assert shared_hash()=='2085df6ea20073c3a9804d79f6baee94e8e9bfe41facda47e3f292fd3cc9394d'
+    config=dict(study='conventional-attention-placement-v1',coding='unbounded_linear_QKV_after_LayerNorm',arm=a.arm,seed=seed,updates=steps,schedule_total=30000,effective_batch=8,physical_batch=4,augmentation='hv',eval_updates=evals,prefetch_depth=2,prefetch_threads=1,manifest_sha256=MANIFEST_SHA)
+    if config_extension:config.update(config_extension)
     def status(phase):atomic_json(outdir/'status.json',dict(phase=phase,update=completed,pid=os.getpid(),updated_utc=datetime.now(timezone.utc).isoformat()))
     def checkpoint():
         driver.reset_model(model);optimizer.zero_grad(set_to_none=True)
@@ -103,7 +106,7 @@ def main():
         if False:
             for key in ('initial','global'):result[key+'_mean_scene_epe']=float(np.mean([np.mean([r[key+'_epe'] for r in frames if r['scene']==s]) for s in scenes]))
         append(outdir/'evaluations.jsonl',result);evaluated.add(completed);checkpoint();print(a.arm,'DEV',completed,result['mean_scene_epe'],flush=True)
-    prefetch=Prefetch(train,order,completed,steps)
+    prefetch=prefetch_factory(train,order,completed,steps)
     try:
         if completed in evals and completed not in evaluated:evaluate()
         torch.cuda.reset_peak_memory_stats()

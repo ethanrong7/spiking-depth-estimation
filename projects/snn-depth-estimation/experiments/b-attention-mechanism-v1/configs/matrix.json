@@ -1,0 +1,18 @@
+{
+  "study": "b-attention-mechanism-v1",
+  "status": "PREPARED_NOT_SUBMITTED",
+  "arm": "B",
+  "updates": 30000,
+  "primary_endpoint": "fixed_30000_mean_scene_epe",
+  "practical_band_px": 0.05,
+  "runs": [
+    {"seed": 1234, "variant": "linear-identity", "stage": "reuse", "reference": "conventional-attention-placement-v1/train/B"},
+    {"seed": 1234, "variant": "signed-surrogate", "stage": "reuse", "reference": "spiking-attention-placement-v1/train/B"},
+    {"seed": 2345, "variant": "linear-identity", "stage": "primary"},
+    {"seed": 2345, "variant": "signed-surrogate", "stage": "primary"},
+    {"seed": 1234, "variant": "linear-surrogate", "stage": "primary"},
+    {"seed": 1234, "variant": "signed-identity", "stage": "primary"},
+    {"seed": 2345, "variant": "linear-surrogate", "stage": "followup"},
+    {"seed": 2345, "variant": "signed-identity", "stage": "followup"}
+  ]
+}

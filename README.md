@@ -531,6 +531,24 @@ For deployment without Git metadata, include a `deployment-source.json` recordin
 the originating checkout's `revision`, `status` and `diff`. The run also archives
 the deployed source, including uncommitted adapter files.
 
+### Placement B mechanism controls
+
+The [B mechanism implementation](projects/snn-depth-estimation/experiments/b-attention-mechanism-v1/README.md)
+adds a paired second-seed comparison and independently controls forward Q/K/V
+encoding (linear or signed T4) and its training derivative (identity or original
+surrogate). The two crossed cells test which part of the encoder helps learning.
+The [NPU run matrix](projects/snn-depth-estimation/experiments/b-attention-mechanism-v1/configs/matrix-npu.json)
+contains eight fresh runs, four variants at each of two seeds. No NPU jobs have
+been submitted. CPU checks cover exact forward values, gradients, initialization,
+checkpoint recomputation and deterministic sample/flip streams.
+
+The [self-contained handoff](projects/snn-depth-estimation/experiments/b-attention-mechanism-v1/b-attention-verification.md)
+includes historical curve summaries, the data contract and Huawei NPU porting
+instructions. The NPU backend/launcher still needs implementation. Default source
+packaging uses this checkout without an old repository or archive; the study must
+train its own NPU references. Dataset files and an assigned Ascend environment
+remain external inputs.
+
 ### Retained experiment code
 
 These files preserve additional architectures, controls and probes. Older campaign entry points can depend on frozen source capsules, registrations, old configurations or checkpoints that were deliberately excluded. They are retained as implementation source, not as ready-to-resume old jobs. Use the fresh runner for the listed model families; adapt another experiment's configuration explicitly before running it. No old cluster controller is enabled by the new entry point.
