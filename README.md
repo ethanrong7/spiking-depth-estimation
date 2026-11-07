@@ -538,8 +538,9 @@ adds a paired second-seed comparison and independently controls forward Q/K/V
 encoding (linear or signed T4) and its training derivative (identity or original
 surrogate). The two crossed cells test which part of the encoder helps learning.
 The [NPU run matrix](projects/snn-depth-estimation/experiments/b-attention-mechanism-v1/configs/matrix-npu.json)
-contains eight fresh runs, four variants at each of two seeds. No NPU jobs have
-been submitted. CPU checks cover exact forward values, gradients, initialization,
+lists eight possible fresh cells. The handoff starts with a staged 5k screen
+and targeted replication, rather than launching every cell to 30k. No NPU jobs
+have been submitted. CPU checks cover exact forward values, gradients, initialization,
 checkpoint recomputation and deterministic sample/flip streams.
 
 The [self-contained handoff](projects/snn-depth-estimation/experiments/b-attention-mechanism-v1/b-attention-verification.md)

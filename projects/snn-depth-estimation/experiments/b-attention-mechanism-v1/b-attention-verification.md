@@ -104,20 +104,88 @@ They change the local derivative at Q/K/V encoding, not the entire downstream
 loss gradient. Evaluate the surrogate using each current run's projected inputs.
 Do not borrow weights, codes or gradients from a trained reference model.
 
-### NPU run plan
+### Staged NPU run plan — minimum-resource investigation
 
-**Rerun all four cells on NPU at seed 1234**, then repeat all four at seed 2345.
-Run the two diagonal references first, or alongside the crossed cells if resources
-permit. Confirm that a useful hybrid-versus-conventional difference exists on the
-NPU protocol before interpreting its mechanism. If it disappears or reverses,
-report that result and inspect port fidelity and seed variation before expanding.
+**Do not launch eight 30k runs initially. Start with a 5k screen, spend more only
+on an informative contrast, and preserve resumable checkpoints.** This plan
+supersedes the earlier full-matrix-first execution plan.
 
-Use the included [NPU matrix](configs/matrix-npu.json): eight fresh runs,
-four cells at each seed. The included [NPU protocol](configs/protocol-npu.json)
-records the settings below and deliberately leaves unknown hardware/software
-fields null. These files are the NPU specification; the future port must load and
-validate them. The older `configs/matrix.json` is a CUDA plan and is not the NPU
-queue. Historical CUDA endpoints remain context, never reused NPU control cells.
+Historical B already showed a useful gap at 5k: conventional EPE 3.441170 versus
+hybrid 2.651039, a 23.0% reduction. At 2.5k the reduction was only 3.2%; at 7.5k it
+was 19.7%. This motivates 5k as the initial screening budget, without assuming
+that the NPU runs will reproduce the historical trajectory.
+
+| Stage | Fresh runs / continuation | Budget | Decision |
+| --- | --- | ---: | --- |
+| 0. Port validation | Tiny CPU/NPU checks and disposable recovery preflight | Engineering checks only | Validate all four implementations before scientific training. |
+| 1. Establish the NPU signal | `linear-identity` and `signed-surrogate`, seed 1234 | 2 × 5k = **10k total updates** | Is there a useful hybrid advantage on the new setup? |
+| 2. Identify the contributing component | `linear-surrogate` and `signed-identity`, seed 1234 | 2 × 5k = **10k additional** | Compare the complete four-cell factorial at the identical 5k checkpoint. |
+| 3. Replicate the deciding contrast | The two cells needed for the leading explanation, seed 2345 | Usually 2 × 5k = **10k additional** | Does that specific forward-rule or backward-rule effect repeat? |
+| 4. Confirm persistence | Resume the informative cells to a common later checkpoint, potentially 30k | Conditional; record before continuing | Does the early mechanism also explain later/final performance? |
+
+The first factorial answer costs **20k optimizer updates in total**, versus 240k
+for eight complete 30k runs. A two-cell second-seed replication brings this to
+30k total. These are update budgets, not guaranteed wall-clock or energy savings;
+measure throughput on the actual NPU. Budget disposable preflight separately.
+
+#### Decisions between stages
+
+- After stage 1, inspect fixed-5k EPE, bad3, paired scene differences and the
+  planned learning-curve points. Use the existing 0.05 px practical band to flag
+  small differences, not to claim significance or equivalence. A clear advantage
+  supports stage 2; an inconsistent trajectory weakens that decision.
+- If no useful gap appears, inspect port fidelity. If the implementation checks
+  pass but the trajectory remains inconclusive, extend **only those two reference
+  runs** to 7.5k (5k additional updates total). Do not fund crossed training merely
+  to explain a gain that has not reproduced.
+- If stage 1 uses 7.5k as the deciding checkpoint, train both crossed cells to
+  7.5k before comparing them. Never compare a crossed 5k result with a 7.5k reference.
+- If all four 5k results are ambiguous, extend those same runs to 7.5k rather
+  than immediately starting another full seed. Record the extension and preserve
+  the initial 5k outcome; this is an adaptive exploratory study.
+- Choose the seed-2345 pair from the question: `linear-surrogate` versus
+  `linear-identity` tests the surrogate benefit with continuous forward values;
+  `signed-identity` versus `linear-identity` tests signed forward encoding with
+  an identity derivative. Other paired comparisons may be appropriate; record the
+  selection before launching the second seed.
+- A two-cell replication supports only its specific contrast. To claim a replicated
+  factorial interaction, repeat **all four** cells at seed 2345. To claim a crossed
+  cell matches hybrid B at the second seed, also run that seed's hybrid reference.
+  Do not infer unrun cells from the first seed.
+- Continue to longer training only when the earlier result justifies that cost.
+  Every later comparison must use the same endpoint, and must report early and
+  late outcomes even if rankings change. No automatic best-checkpoint selection.
+
+Use [configs/matrix-npu.json](configs/matrix-npu.json) as the **catalog of eight
+possible fresh cells**, not an instruction to launch all eight. Its `updates=30000`
+and [configs/protocol-npu.json](configs/protocol-npu.json) describe the retained
+full training horizon. The execution agent must add an explicit stage/run budget
+selection before launching; the current files do not implement this staged queue.
+Historical CUDA endpoints remain context, never reused NPU controls. The older
+`configs/matrix.json` is a CUDA plan and must not drive this study.
+
+#### Pause the run; do not compress the learning-rate schedule
+
+Keep `OneCycleLR(total_steps=30000)` from the first optimizer update. For the initial
+screen, **pause at optimizer update 5000**. Do not change `total_steps` to 5000,
+accelerate the decay, reset the optimizer, or restart the schedule when extending.
+Retain the full Dev set, batch contract, data order and evaluation points. This
+tests the early portion of the original recipe rather than a new short recipe.
+
+The current lower-level worker has a `--stop-at` argument, but `run_on_gpu.py`
+hard-codes 30000 and asserts a 30k endpoint. The NPU agent must implement a real
+stage-budget option and forward it through every wrapper. Keep the stage budget
+separate from immutable model/optimizer configuration, so increasing the pause
+point does not invalidate an otherwise identical resume. At 5k/7.5k:
+
+- Finish the scheduled evaluation and atomically save model, optimizer, scheduler,
+  RNG, sample order and evaluation counters.
+- Retain a named checkpoint for that screened update in addition to `last.pt`.
+- Mark the run `SCREEN_COMPLETED` or equivalent, with its actual update, rather
+  than `COMPLETED_30000`. The wrapper must accept a valid screened endpoint without
+  looking for `step-30000.pt` or reporting failure.
+- Resume from that complete checkpoint, preserving the 30k scheduler position.
+  Full Dev evaluation is required at every selected comparison endpoint.
 
 ### Fixed training contract
 
@@ -125,7 +193,8 @@ queue. Historical CUDA endpoints remain context, never reused NPU control cells.
   Manifest SHA256:
   `bad4369b6fd8b0cdf871a20b1727c2d9b59733a16bd33f75904227bdfef4510a`.
 - All 50 sensor bins, native resolution, matched cyclic sample order and HV flips.
-- 30,000 optimizer updates / 240,000 sample presentations; physical batch 4,
+- Full schedule horizon: 30,000 updates / 240,000 sample presentations. Initial
+  per-run pause: 5,000 updates / 40,000 presentations. Physical batch 4,
   accumulation 2, effective batch 8; keep valid-count microbatch loss weighting.
 - 16 train / 32 Dev refinement iterations; preserve disparity sign, masks, padding,
   full valid evaluation support, and scene averaging.
@@ -137,7 +206,8 @@ queue. Historical CUDA endpoints remain context, never reused NPU control cells.
   order and flips with the train seed; Dev loader uses seed+991. Within each seed,
   every cell begins from identical CPU-initialized tensors and presentation order.
 - Evaluate updates 0, 250, 500, 1000, 1500, 2500, then 5000 through 30000 every 2500.
-  Complete all valid runs regardless of interim ranking; no accuracy promotion gate.
+  Complete each selected stage budget before its decision; do not stop a cell
+  midway merely because an intermediate score is worse. Later stages are conditional.
 
 If NPU memory requires a different physical batch, preserve effective batch and
 valid-pixel weighting and apply the same change to every cell. Record the changed
@@ -223,8 +293,14 @@ submission still requires the user's execution instruction and real site details
 ## 4. Expected interpretation of the results
 
 Let L = linear forward, S = signed forward, I = identity derivative and G = the
-original surrogate derivative. Compare fixed-30k EPE within the same seed/backend.
-Treat 0.05 px as a descriptive practical band, not a statistical equivalence test.
+original surrogate derivative. Compare the same fixed stage endpoint within the
+same seed/backend: initially 5k, or 7.5k after a documented extension. Apply the
+same contrasts again at 30k if final confirmation is funded. Treat 0.05 px as a
+descriptive practical band, not a statistical equivalence test.
+
+**The screen identifies an early-learning mechanism.** Even a replicated 5k effect
+does not yet establish the cause of the historical final-30k advantage. A selected
+two-cell second-seed result is a targeted replication, not a replicated full matrix.
 
 | Observed outcome, replicated where possible | Supported interpretation | Next experiment |
 | --- | --- | --- |
@@ -269,7 +345,8 @@ b-attention-mechanism-v1/
   b-attention-verification.md
   outputs/                              # ignored by Git and source packaging
     npu-<study-id>/
-      study.json                        # exact matrix, protocol, source identity
+      study.json                        # cell catalog, selected stages, protocol/source
+      stage-decisions.jsonl             # outcomes, selected contrasts and next budgets
       port-validation.json              # environment, checks, measured differences
       seed-1234/
         linear-identity/
@@ -286,6 +363,7 @@ b-attention-mechanism-v1/
             checkpoint.json
             result.json
             last.pt
+            step-5000.pt                # retain screened checkpoints
             step-7500.pt
             step-30000.pt
         signed-surrogate/...
@@ -313,7 +391,7 @@ files already produced by the current implementation.
 | `train.jsonl` | One row per committed optimizer update: update, samples_seen, loss, gradient_norm, placement_gradients, lr_used, lr_next, indices, augmentation_hv, seconds and measured peak memory. Preserve original names. NPU synchronization must make timing meaningful. |
 | `evaluations.jsonl` | update, samples_seen, mean_scene_epe, scene_epe mapping, pooled_epe, bad1/bad3/bad5 and per_frame rows containing scene/frame IDs, EPE, bad rates and valid_pixels. Record no missing measurement as zero. |
 | `checkpoint.json` / `recoveries.jsonl` | Last complete update, scheduler counter, completed evaluation steps and each restored update. Resume must reconcile uncommitted rows so graphs have one committed record per update. |
-| `status.json` / `result.json` | Running/paused/failed/completed state, latest update/time, completion counters and finite-state check. Only a valid 30k evaluation plus completed checkpoint establishes a final endpoint. |
+| `status.json` / `result.json` | Running/paused/failed/completed state, latest update/time, completion counters and finite-state check. A valid screened evaluation/checkpoint establishes only its stage endpoint. Only a valid 30k evaluation plus completed checkpoint establishes the full-schedule endpoint. |
 
 Keep EPE in **pixels**, bad rates in **percent**, learning rate as its raw numeric
 value, durations in **seconds**, memory in **MiB**, and timestamps in ISO-8601 UTC.
@@ -328,15 +406,19 @@ Use a long-form `curves.csv` with columns:
 study_id,backend,seed,variant,update,samples_seen,metric,value,unit
 ```
 
-`endpoints.csv` should contain one row per completed seed/variant, including
-`mean_scene_epe`, `bad3`, update=30000 and source/protocol identity.
+`endpoints.csv` should contain one row per completed seed/variant/stage, including
+`stage`, `endpoint_kind` (`screen` or `full_schedule`), `mean_scene_epe`, `bad3`,
+the actual `update` (5000, 7500 or 30000), `schedule_total=30000`, and source/protocol
+identity. Never label a screened endpoint as a completed 30k experiment.
 `scene-deltas.csv` should identify the seed, scene, both compared variants and both
 EPE values before their difference. Derive paired factorial contrasts within seed.
 
 Plot EPE and bad3 versus optimizer update, and training loss/LR separately. Plot
 individual seeds as well as any aggregate. Do not merge CUDA and NPU curves into
 one seed average, include preflight data, interpolate missing endpoints, or replace
-fixed-30k results with best-Dev values. Preserve JSONL as the source of truth and
+fixed-stage results with best-Dev values. Keep 5k/7.5k screening panels separate
+from 30k confirmation panels. Record the reason and chosen comparison before each
+extension or second-seed launch in `stage-decisions.jsonl`. Preserve JSONL as the source of truth and
 regenerate CSV/figures from it.
 
 ## Fresh-clone inputs and repository map
@@ -406,8 +488,11 @@ historically equivalent CUDA reproduction.
 ## Agent completion criteria
 
 The next execution agent should deliver a tested NPU backend/launcher consuming the
-included fresh NPU matrix, the exact packaged source/configuration, port-validation records,
+included NPU cell catalog with explicit stage selection and resumable pause budgets,
+the exact packaged source/configuration, port-validation records,
 and the output tree above. Report any unsupported operation or recipe change
 explicitly. Do not claim NPU readiness from CPU tests alone. Once runs finish,
 provide the paired EPE/bad3 table, learning curves, scene deltas and factorial
-interpretation, including negative or inconsistent outcomes.
+interpretation, including negative or inconsistent outcomes. Distinguish an early
+mechanism screen from later confirmation; completion does not require running
+every catalog cell to 30k.

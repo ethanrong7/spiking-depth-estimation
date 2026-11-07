@@ -20,8 +20,10 @@ questions, Huawei NPU porting tasks, result interpretation and output schemas.
 | `linear-surrogate` | Unbounded linear projection | Original T4 surrogate |
 | `signed-identity` | Signed T4 code | Identity / straight-through |
 
-Use [configs/matrix-npu.json](configs/matrix-npu.json): all four variants trained
-fresh at both seeds 1234 and 2345. Use
+Use [configs/matrix-npu.json](configs/matrix-npu.json) as a catalog of possible fresh
+cells. Follow the handoff's staged plan: two references to 5k, then two crossed
+controls to 5k if the signal reproduces, then a targeted second-seed comparison.
+Do not launch the full eight-run 30k matrix initially. Use
 [configs/protocol-npu.json](configs/protocol-npu.json) for the matched 30k settings.
 Historical CUDA results are context, not reused NPU control cells.
 `configs/matrix.json` is retained only as the earlier CUDA planning record.
@@ -61,5 +63,7 @@ forward values.
 
 Write logs and later plots under this directory's ignored `outputs/`, separated
 by study revision, backend, seed and variant. Use the JSONL/CSV contracts in the
-handoff. Keep checkpoints outside Git. The primary metric is fixed-30k Dev
-mean-scene EPE; include bad3, complete curves and per-scene paired differences.
+handoff. Keep checkpoints outside Git. The initial endpoint is fixed-5k Dev mean-scene EPE, with bad3, complete curves
+and per-scene paired differences. Keep the 30k LR schedule when pausing; longer
+training and fixed-30k confirmation are conditional. The NPU launcher still needs
+an explicit stage-budget/resume option.
