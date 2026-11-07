@@ -160,7 +160,8 @@ class ControlsTest(unittest.TestCase):
         self.assertEqual(captured['root'], '/configured/runs/seed-2345/linear-surrogate')
         self.assertEqual(captured['argv'][1:], ['--arm', 'B', '--resume'])
         self.assertEqual(captured['worker_path'], EXP / 'worker.py')
-        self.assertEqual(captured['worker_args'], ('--seed', '2345', '--variant', 'linear-surrogate'))
+        self.assertEqual(captured['worker_args'], ('--seed', '2345', '--variant', 'linear-surrogate',
+            '--input-mode', 'fast', '--preload-gib', '12.0', '--input-workers', '2', '--prefetch-depth', '2'))
 
     def test_worker_forwards_seed_and_rules(self):
         worker = load('b_test_worker_adapter', EXP / 'worker.py')

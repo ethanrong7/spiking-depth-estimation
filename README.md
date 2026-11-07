@@ -618,6 +618,47 @@ savings. The 3070 CUDA-11.8 environment is separate from a Blackwell-capable 509
 environment. The existing `evaluate_nmrf.py` CLI loads the continuous parent;
 use this pilot runner's validation path for spiking-backbone checkpoints.
 
+`profile_nmrf_inference.py` audits saved ANN or spiking checkpoints on their
+recorded native-resolution development split, without training. It reports
+convolution/matrix FLOPs (one multiply-add = two FLOPs), backbone versus matcher
+arithmetic, active discrete synaptic connections, continuous-backbone zero
+activity, LIF updates, and uninstrumented CUDA inference latency. FLOP coverage
+excludes elementwise operations, normalization, sampling and memory traffic;
+the output includes an operator inventory. Activity-derived additions describe
+a possible hardware implementation, not energy measured on the GPU. The ANN's
+signed-input stem receives the same discrete-arithmetic credit.
+
+```bash
+python profile_nmrf_inference.py --model spiking \
+  --checkpoint "$SPIKE_OUTPUT_ROOT/sdsa-pilot/checkpoint-last.pt" \
+  --config "$SPIKE_OUTPUT_ROOT/sdsa-pilot/config.json" \
+  --data-root "$SPIKE_DATA_ROOT" --output "$SPIKE_OUTPUT_ROOT/sdsa-profile"
+# Use --model ann with a saved nmrf-native-50 checkpoint and its pilot config.
+```
+
+For repeated CUDA inference at a fixed resolution, `nmrf_inference_runtime.py`
+provides an opt-in CUDA Graph wrapper. Load the checkpoint and move the model
+and inputs to the GPU first:
+
+```python
+from nmrf_inference_runtime import CUDAGraphInference
+
+model.eval()
+with torch.no_grad():
+    fast_model = CUDAGraphInference(model, (left, right))
+    prediction = fast_model(left, right)["disp"]
+```
+
+The wrapper replays the same kernels with fresh input data and returns owned
+output tensors. It does not change weights, precision, neuron thresholds or
+time steps. Capture requires setup time and persistent GPU buffers; construct
+a new wrapper after changing input shape, device, dtype or weights. Use one
+wrapper per sequential inference stream. Training continues through the original
+model. `benchmark_nmrf_inference_runtime.py` compares eager inference against
+graph replay on a saved validation split, checking every disparity value and
+alternating timing order. Its separate `bn-fold` option is experimental: floating
+point rounding changes near spike thresholds must be checked before adoption.
+
 ### Retained experiment code
 
 These files preserve additional architectures, controls and probes. Older campaign entry points can depend on frozen source capsules, registrations, old configurations or checkpoints that were deliberately excluded. They are retained as implementation source, not as ready-to-resume old jobs. Use the fresh runner for the listed model families; adapt another experiment's configuration explicitly before running it. No old cluster controller is enabled by the new entry point.

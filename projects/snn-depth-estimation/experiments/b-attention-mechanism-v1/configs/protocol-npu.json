@@ -52,7 +52,17 @@
     27500,
     30000
   ],
-  "checkpoint_every": 50,
+  "checkpoint_every": 500,
+  "speed_runtime": {
+    "version": 1,
+    "loss": "fixed_shape_masked_sum",
+    "checkpoint_every": 500,
+    "diagnostic_every": 100,
+    "status_every": 25,
+    "profile_cpu": false,
+    "host_metric_reads_per_update": 1
+  },
+  "input_mode_default": "fast",
   "retain_updates": [
     7500,
     30000

@@ -2,13 +2,14 @@
 from pathlib import Path
 import argparse,hashlib,importlib.util,json,os,random,signal,sys,time
 from datetime import datetime,timezone
+from contextlib import nullcontext
 sys.path.insert(0,str(Path(__file__).resolve().parent.parent/"shared-gpu-30k-v1"))
 from common import Prefetch,atomic_json,append,reconcile,phase_lock
 PROJECT=Path(__file__).resolve().parents[2]
 MANIFEST_SHA='bad4369b6fd8b0cdf871a20b1727c2d9b59733a16bd33f75904227bdfef4510a'
 EVALS=[0,250,500,1000,1500,2500]+list(range(5000,30001,2500))
 
-def main(*, seed=1234, model_install=None, prefetch_factory=Prefetch, config_extension=None, input_pipeline=None, strict_determinism=True):
+def main(*, seed=1234, model_install=None, prefetch_factory=Prefetch, config_extension=None, input_pipeline=None, strict_determinism=True, speed_runtime=None):
     p=argparse.ArgumentParser(description=__doc__)
     for key in ('data-root','manifest','root'):p.add_argument('--'+key,type=Path,required=True)
     p.add_argument('--stop-at',type=int,default=30000);p.add_argument('--arm',choices=('A','B'),required=True);p.add_argument('--preflight',action='store_true');a=p.parse_args()
@@ -62,6 +63,7 @@ def main(*, seed=1234, model_install=None, prefetch_factory=Prefetch, config_ext
         assert shared_hash()=='2085df6ea20073c3a9804d79f6baee94e8e9bfe41facda47e3f292fd3cc9394d'
     config=dict(study='conventional-attention-placement-v1',coding='unbounded_linear_QKV_after_LayerNorm',arm=a.arm,seed=seed,updates=steps,schedule_total=30000,effective_batch=8,physical_batch=4,augmentation='hv',eval_updates=evals,prefetch_depth=2,prefetch_threads=1,manifest_sha256=MANIFEST_SHA)
     if config_extension:config.update(config_extension)
+    if speed_runtime is not None:config['speed_runtime']=speed_runtime.config
     if not strict_determinism:
         config['execution'] = dict(deterministic_algorithms=False, cudnn_deterministic=False,
                                    cudnn_benchmark=False)
@@ -69,10 +71,12 @@ def main(*, seed=1234, model_install=None, prefetch_factory=Prefetch, config_ext
         config['input_pipeline']={k:input_pipeline.metadata[k] for k in ('mode','budget_bytes','workers','prefetch_depth','spike_host_dtype')}
     def status(phase):atomic_json(outdir/'status.json',dict(phase=phase,update=completed,pid=os.getpid(),updated_utc=datetime.now(timezone.utc).isoformat()))
     def checkpoint():
+        checkpoint_started=time.monotonic()
         driver.reset_model(model);optimizer.zero_grad(set_to_none=True)
         state=dict(peak_reserved_mib=max(prior_peak_reserved,torch.cuda.max_memory_reserved()/2**20),peak_allocated_mib=max(prior_peak_allocated,torch.cuda.max_memory_allocated()/2**20),model=model.state_dict(),optimizer=optimizer.state_dict(),scheduler=scheduler.state_dict(),updates=completed,samples_seen=completed*8,evaluated=sorted(evaluated),config=config,source_identity=registry['source_identity_sha256'],order=order,rng=dict(python=random.getstate(),numpy=np.random.get_state(),torch=torch.get_rng_state(),cuda=torch.cuda.get_rng_state_all(),loader=loader.generator.get_state()))
         temp=outdir/'last.tmp.pt';torch.save(state,temp);temp.replace(checkpoint_path)
         atomic_json(outdir/'checkpoint.json',dict(update=completed,scheduler_last_epoch=scheduler.last_epoch,evaluated=sorted(evaluated),bytes=checkpoint_path.stat().st_size,complete=True))
+        if speed_runtime is not None:append(outdir/'performance.jsonl',dict(kind='checkpoint',update=completed,seconds=time.monotonic()-checkpoint_started))
     if checkpoint_path.exists():
         ck=torch.load(checkpoint_path,map_location='cpu',weights_only=False)
         prior_peak_reserved=ck.get('peak_reserved_mib',0.);prior_peak_allocated=ck.get('peak_allocated_mib',0.)
@@ -121,13 +125,21 @@ def main(*, seed=1234, model_install=None, prefetch_factory=Prefetch, config_ext
             for key in ('initial','global'):result[key+'_mean_scene_epe']=float(np.mean([np.mean([r[key+'_epe'] for r in frames if r['scene']==s]) for s in scenes]))
         append(outdir/'evaluations.jsonl',result);evaluated.add(completed);checkpoint();print(a.arm,'DEV',completed,result['mean_scene_epe'],flush=True)
     prefetch=prefetch_factory(train,order,completed,steps)
+    span=speed_runtime.span if speed_runtime is not None else lambda name:nullcontext()
     try:
         if completed in evals and completed not in evaluated:evaluate()
         torch.cuda.reset_peak_memory_stats()
+        if speed_runtime is not None and not a.preflight:speed_runtime.start_profile(outdir)
         while completed<min(steps,a.stop_at):
+            update_started=time.monotonic()
             if stop[0] or (a.root/'pause.request').exists():checkpoint();status('paused');return 75
-            wait=time.monotonic();batch=prefetch.get(completed);consumer_wait=time.monotonic()-wait;status('training')
-            with phase_lock(a.root,a.arm,False,lambda:torch.cuda.empty_cache() if list(a.root.glob('validation-*.request')) else None):
+            wait=time.monotonic()
+            with span('input_wait'):batch=prefetch.get(completed)
+            consumer_wait=time.monotonic()-wait
+            if speed_runtime is None or a.preflight or completed%speed_runtime.status_every==0:status('training')
+            lock_started=time.monotonic()
+            with phase_lock(a.root,a.arm,False,lambda:torch.cuda.empty_cache() if list(a.root.glob('validation-*.request')) else None,record_events=speed_runtime is None):
+                phase_wait=time.monotonic()-lock_started
                 tick=time.monotonic();model.train()
                 if True:model.freeze_bn()
                 optimizer.zero_grad(set_to_none=True);items=batch.get('items')
@@ -137,36 +149,59 @@ def main(*, seed=1234, model_install=None, prefetch_factory=Prefetch, config_ext
                     target=torch.stack([r[2] for r in items]);valid=torch.stack([r[3] for r in items])[:,None]
                     x=torch.arange(target.shape[-1])[None,None,None];inside=valid&(x+target>=0)&(x+target<=target.shape[-1]-1)
                     counts=dict(initial=int(inside.sum()),valid=int(valid.sum()),correspondence=int(F.pad(inside,InputPadder(target.shape,divis_by=32)._pad)[...,::4,::4].sum()))
-                total=0.;parts_sum={};activity=None
+                total=0.;parts_sum={};activity=None;loss_tensors=[];finite_checks=[]
                 for offset in (0,4):
                     if 'microbatches' in batch:
                         micro=batch['microbatches'][offset//4]
-                        left,right,target,valid=[v.cuda() for v in micro['tensors']]
+                        with span('host_to_device'):left,right,target,valid=[v.cuda() for v in micro['tensors']]
                         micro_valid_count=micro['valid_count']
                     else:
                         micro=items[offset:offset+4];left,right,target,valid=[torch.stack([r[j] for r in micro]).cuda() for j in range(4)]
-                        micro_valid_count=int(valid.sum())
+                        micro_valid_count=sum(int(r[3].sum()) for r in micro) if speed_runtime is not None else int(valid.sum())
                     # Convert on the accelerator, before 2*spikes-1 in native forward.
                     left,right=left.float(),right.float()
                     if True:
-                        preds,spikes,volts=driver.forward(model,left,right,16,True);loss=driver.disparity_loss(preds,target,valid)*micro_valid_count/counts['valid'];del preds,spikes,volts
+                        with span('model_forward'):preds,spikes,volts=driver.forward(model,left,right,16,True)
+                        with span('disparity_loss'):
+                            if speed_runtime is None:loss=driver.disparity_loss(preds,target,valid)
+                            else:
+                                loss,finite=speed_runtime.loss(preds,target,valid);finite_checks.append(finite)
+                        loss=loss*micro_valid_count/counts['valid'];del preds,spikes,volts
                     else:
                         output=model(left,right);loss,parts=s2m2_v2_loss(output,target,valid,counts);activity=float(output['activity'])
                         for key in ('full_l1','initial_l1','correspondence_ce'):parts_sum[key]=parts_sum.get(key,0)+float(parts[key].detach())
                         del output
-                    assert torch.isfinite(loss);loss.backward();total+=float(loss.detach());driver.reset_model(model);del left,right,target,valid,loss,micro
+                    if speed_runtime is None:
+                        assert torch.isfinite(loss)
+                    with span('backward'):loss.backward()
+                    if speed_runtime is None:total+=float(loss.detach())
+                    else:loss_tensors.append(loss.detach())
+                    driver.reset_model(model);del left,right,target,valid,loss,micro
                 q_gradient=None
                 placement=model.update_block if a.arm=='C' else model.placement
-                gradients={n:float(v.grad.norm()) for n,v in placement.named_parameters() if v.grad is not None}
+                if speed_runtime is None:
+                    gradients={n:float(v.grad.norm()) for n,v in placement.named_parameters() if v.grad is not None}
+                    norm=float(torch.nn.utils.clip_grad_norm_(model.parameters(),1.))
+                else:
+                    detailed=a.preflight or completed==0 or (completed+1)%speed_runtime.diagnostic_every==0
+                    # Summarize before clipping so the diagnostic retains its old meaning.
+                    # clip_grad_norm_ returns the original total norm; cache branch norms first.
+                    branch_grads={n:p.grad.detach().norm() for n,p in placement.named_parameters() if p.grad is not None} if detailed else {}
+                    norm_tensor=torch.nn.utils.clip_grad_norm_(model.parameters(),1.)
+                    with span('metrics_to_host'):total,norm,gradients=speed_runtime.summarize(loss_tensors,finite_checks,norm_tensor,branch_grads)
                 assert all(np.isfinite(v) for v in gradients.values())
                 if a.preflight and (a.arm=='C' or completed>0):
                     assert all(gradients.get('codes.'+name+'.weight',0)>0 for name in ('q','k','v')),gradients
                 if q_gradient is not None:assert np.isfinite(q_gradient) and q_gradient>0
-                norm=float(torch.nn.utils.clip_grad_norm_(model.parameters(),1.));assert np.isfinite(norm) and norm>0
-                lr=optimizer.param_groups[0]['lr'];optimizer.step();scheduler.step();optimizer.zero_grad(set_to_none=True);torch.cuda.synchronize();completed+=1
-                append(outdir/'train.jsonl',dict(update=completed,samples_seen=completed*8,indices=batch['indices'],augmentation_hv=batch['flags'],loss=total,**parts_sum,gradient_norm=norm,final_qk_gradient=q_gradient,placement_gradients=gradients,lr_used=lr,lr_next=scheduler.get_last_lr()[0],spike_activity=activity,seconds=time.monotonic()-tick,consumer_wait_seconds=consumer_wait,decode_seconds=batch['decode_seconds'],input_prepare_seconds=batch.get('input_prepare_seconds'),host_batch_bytes=batch.get('host_batch_bytes'),peak_allocated_mib=torch.cuda.max_memory_allocated()/2**20,resident_allocated_mib=torch.cuda.memory_allocated()/2**20))
+                assert np.isfinite(norm) and norm>0
+                lr=optimizer.param_groups[0]['lr']
+                with span('optimizer_step'):optimizer.step();scheduler.step();optimizer.zero_grad(set_to_none=True)
+                with span('end_step_sync'):torch.cuda.synchronize()
+                completed+=1
+                append(outdir/'train.jsonl',dict(update=completed,samples_seen=completed*8,indices=batch['indices'],augmentation_hv=batch['flags'],loss=total,**parts_sum,gradient_norm=norm,final_qk_gradient=q_gradient,placement_gradients=gradients,lr_used=lr,lr_next=scheduler.get_last_lr()[0],spike_activity=activity,seconds=time.monotonic()-tick,consumer_wait_seconds=consumer_wait,phase_wait_seconds=phase_wait,update_wall_seconds=time.monotonic()-update_started,decode_seconds=batch['decode_seconds'],input_prepare_seconds=batch.get('input_prepare_seconds'),host_batch_bytes=batch.get('host_batch_bytes'),peak_allocated_mib=torch.cuda.max_memory_allocated()/2**20,resident_allocated_mib=torch.cuda.memory_allocated()/2**20))
                 del items,batch
-            if completed%50==0:checkpoint()
+            if completed%(speed_runtime.checkpoint_every if speed_runtime is not None else 50)==0 and (speed_runtime is None or completed not in evals):checkpoint()
+            if speed_runtime is not None:speed_runtime.profile_step()
             if completed in evals and completed not in evaluated:evaluate()
             if not a.preflight and completed in (7500,30000):
                 import shutil
@@ -185,6 +220,7 @@ def main(*, seed=1234, model_install=None, prefetch_factory=Prefetch, config_ext
     except torch.cuda.OutOfMemoryError as error:
         atomic_json(outdir/'memory-failure.json',dict(update_attempt=completed+1,error=str(error),last_complete_checkpoint=json.loads((outdir/'checkpoint.json').read_text()),time_utc=datetime.now(timezone.utc).isoformat()));return 86
     finally:
+        if speed_runtime is not None:speed_runtime.stop_profile()
         prefetch.close()
         for f in a.root.glob('validation-'+a.arm+'.request'):f.unlink(missing_ok=True)
 

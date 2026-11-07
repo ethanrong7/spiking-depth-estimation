@@ -1,5 +1,6 @@
 """Opt-in B controls on the unchanged matched 30k training loop."""
 import argparse
+import os
 from functools import partial
 import sys
 
@@ -20,6 +21,11 @@ def main():
     sys.argv = [sys.argv[0], *remaining]
     forward, backward = RULES[args.variant]
     pipeline_options = {}
+    if os.environ.get('B_ATTENTION_SPEED_MODE', '1') not in ('0', '1'):
+        raise ValueError('B_ATTENTION_SPEED_MODE must be 0 or 1')
+    if os.environ.get('B_ATTENTION_SPEED_MODE', '1') == '1':
+        from speed_runtime import SpeedRuntime
+        pipeline_options['speed_runtime'] = SpeedRuntime()
     if args.input_mode != 'legacy':
         from input_pipeline import InputPipeline
         pipeline_options['input_pipeline'] = InputPipeline(

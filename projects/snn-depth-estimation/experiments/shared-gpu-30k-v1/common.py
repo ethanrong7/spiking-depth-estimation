@@ -56,7 +56,7 @@ def reconcile(path,keep):
         path.write_text(''.join(json.dumps(r,allow_nan=False)+'\n' for r in selected))
 
 @contextmanager
-def phase_lock(root,arm,validation=False,empty_cache=lambda:None):
+def phase_lock(root,arm,validation=False,empty_cache=lambda:None,record_events=True):
     """Train steps share the lock; validation holds it exclusively.
 
     Pending validation blocks new train steps; waiting peers release cached
@@ -69,9 +69,9 @@ def phase_lock(root,arm,validation=False,empty_cache=lambda:None):
             empty_cache();time.sleep(.05)
     with (root/'gpu-phase.lock').open('a') as lock:
         fcntl.flock(lock,fcntl.LOCK_EX if validation else fcntl.LOCK_SH)
-        append(root/'gpu-phases.jsonl',dict(arm=arm,validation=validation,event='start',monotonic_ns=time.monotonic_ns()))
+        if record_events:append(root/'gpu-phases.jsonl',dict(arm=arm,validation=validation,event='start',monotonic_ns=time.monotonic_ns()))
         try:yield
         finally:
-            append(root/'gpu-phases.jsonl',dict(arm=arm,validation=validation,event='end',monotonic_ns=time.monotonic_ns()))
+            if record_events:append(root/'gpu-phases.jsonl',dict(arm=arm,validation=validation,event='end',monotonic_ns=time.monotonic_ns()))
             empty_cache();fcntl.flock(lock,fcntl.LOCK_UN)
             if validation:request.unlink(missing_ok=True)

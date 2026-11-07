@@ -25,8 +25,8 @@ do not bypass them to hot-patch an old checkpoint or running frozen package.
 
 For smaller host memory, use `B_ATTENTION_INPUT_MODE=fast`: faster bit decoding
 and ahead-of-time compact batch preparation, without keeping the corpus in RAM.
-Use `legacy` to restore the original loader. The default remains `legacy`, so
-existing jobs/configurations do not silently allocate ten additional GiB of RAM.
+Use `legacy` to restore the original loader. The default is now `fast`; full
+corpus preloading remains explicit, so no extra ten-GiB cache is allocated by default.
 
 ## What changes
 
@@ -73,8 +73,9 @@ compatibility; under preload it no longer means disk decoding.
 - With negligible consumer wait, more preload workers will not solve poor
   utilization. The recurrent model, many small launches/synchronizations, backend
   operator fallbacks or checkpoint/evaluation overhead may dominate instead.
-- Device-to-host scalar logging and synchronous checkpoints still exist. This
-  patch does not claim to remove all CPU/host overhead or maximize NPU utilization.
+- The default [speed runtime](SPEED.md) now consolidates metric transfers and
+  reduces checkpoint frequency. Synchronous transfers and recurrent dispatch
+  remain possible bottlenecks; backend throughput must still be measured.
 
 Measure full wall time per fixed number of optimizer updates as well as device
 utilization. No Huawei utilization or throughput improvement has been measured

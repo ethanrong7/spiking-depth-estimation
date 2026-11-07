@@ -70,6 +70,10 @@ an explicit stage-budget/resume option.
 
 ## Input preloading
 
+**Speed defaults:** compact `fast` input preparation and the reduced-synchronization
+training loop are enabled for B. See [SPEED.md](SPEED.md) for the CPU diagnostic,
+server profiling command, changed checkpoint cadence and remaining bottlenecks.
+
 See [INPUT_PIPELINE.md](INPUT_PIPELINE.md) for the optional RAM preload and compact
 batch-preparation path. It preserves paired training inputs and can feed the
 existing accelerator compatibility layer. Enable with `B_ATTENTION_INPUT_MODE=preload`

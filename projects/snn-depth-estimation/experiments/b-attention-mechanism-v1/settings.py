@@ -28,7 +28,7 @@ def run_folder(root, seed, variant):
 
 def add_input_arguments(parser):
     parser.add_argument('--input-mode', choices=('legacy', 'fast', 'preload'),
-                        default=os.environ.get('B_ATTENTION_INPUT_MODE', 'legacy'))
+                        default=os.environ.get('B_ATTENTION_INPUT_MODE', 'fast'))
     parser.add_argument('--preload-gib', type=float,
                         default=float(os.environ.get('B_ATTENTION_PRELOAD_GIB', '12')))
     parser.add_argument('--input-workers', type=int,

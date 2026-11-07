@@ -2,6 +2,11 @@
 
 Updated 7 November 2026. Read this before implementing or launching this study.
 
+**Execution update, 7 November:** use the default [speed runtime](SPEED.md) for all
+four cells. It consolidates host reads, avoids dynamic loss indexing and uses
+500-update recovery checkpoints. The objective, paired data and 30k LR horizon
+are unchanged. Read that page before launching or interpreting timing logs.
+
 **Objective:** determine why placement B's hybrid signed-spiking feature exchange
 learned a better stereo estimator than the matched conventional attention block.
 Separate the forward representation from the local learning rule, then replicate
