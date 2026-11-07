@@ -611,6 +611,15 @@ python run_spiking_nmrf.py train --steps 2000 --batch-size 2 --workers 2 \
   --data-root "$SPIKE_DATA_ROOT" --output "$SPIKE_OUTPUT_ROOT/sdsa-pilot"
 ```
 
+For a training-budget control, the same runner accepts `--model ann`, selecting
+the original continuous 50-channel CNN NMRF parent. Match the spiking run's seed,
+batch/accumulation, steps, crop, learning rate, workers and validation intervals;
+do not increase batch size just because the ANN uses less memory. Both builders
+preserve identical initial matcher tensors and the CPU RNG state used by the
+sampler/crops. This compares the complete backbone designs, not only the neuron
+type. The default remains `--model spiking`; model-specific checkpoint metadata
+prevents accidentally resuming one architecture as the other.
+
 Training crops default to 128×256. Resume requires the same model and scheduler
 horizon; sampler/crop RNG restarts from the seed. This GPU implementation simulates
 spikes with dense PyTorch operations: activity counts are not measured energy

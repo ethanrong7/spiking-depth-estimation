@@ -6,6 +6,23 @@ from spiking_nmrf import LIF, SpikingStereoBackbone
 
 
 class SpikingBackboneTests(unittest.TestCase):
+    def test_matched_control_preserves_matcher_initialization_and_cpu_rng(self):
+        from run_spiking_nmrf import pilot_definition
+        ann_builder,ann_name,_=pilot_definition('ann')
+        spike_builder,spike_name,_=pilot_definition('spiking')
+        ann,_,_=ann_builder(1234)
+        ann_rng=torch.get_rng_state().clone()
+        spike,_,_=spike_builder(1234)
+        self.assertTrue(torch.equal(ann_rng,torch.get_rng_state()))
+        self.assertNotEqual(ann_name,spike_name)
+        ann_state=ann.state_dict()
+        compared=0
+        for name,value in spike.state_dict().items():
+            if name.startswith('parent.backbone.'):continue
+            self.assertTrue(torch.equal(value,ann_state[name]),name)
+            compared+=1
+        self.assertGreater(compared,100)
+
     def test_temporal_integration_resets_between_calls_and_batch_items(self):
         neuron=LIF()
         x=torch.tensor([[1.2,0.],[1.2,0.],[1.2,0.],[1.2,0.],[1.2,0.]],requires_grad=True)

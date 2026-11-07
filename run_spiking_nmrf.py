@@ -1,4 +1,4 @@
-"""CPU preflight, CUDA capacity benchmark, and bounded SDSA-NMRF pilot.
+"""CPU preflight, CUDA benchmark, and matched SDSA/continuous NMRF pilots.
 
 Outputs and datasets must be outside the source checkout. GPU simulation does
 not establish an inference energy saving. Uses the native NMRF training loss.
@@ -16,17 +16,27 @@ import torch
 from torch.utils.data import DataLoader
 
 from evaluate_nmrf import input_tensors,metric_counts,summarize
-from nmrf_runtime import prepare_batch,weighted_loss,UPSTREAM_REVISION
+from nmrf_runtime import prepare_batch,weighted_loss,UPSTREAM_REVISION,build_native_nmrf
 from run_nmrf import record_run,emit
 from runtime import NativeDataset
 from spiking_nmrf import build_spiking_nmrf,ARCHITECTURE,MODEL_NAME
 
 ROOT=Path(__file__).resolve().parent
+ANN_ARCHITECTURE=dict(model_name='nmrf-native-50',backbone='original NMRF CNN',
+                      sensor_bins=50,input='50 stacked channels; original signed normalization',
+                      output_channels=256,matcher='unchanged continuous NMRF')
+
+
+def pilot_definition(kind):
+    if kind=='spiking':return build_spiking_nmrf,MODEL_NAME,ARCHITECTURE
+    if kind=='ann':return build_native_nmrf,ANN_ARCHITECTURE['model_name'],ANN_ARCHITECTURE
+    raise ValueError(kind)
 
 
 def arguments():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('command',choices=['preflight','benchmark','train'])
+    p.add_argument('--model',choices=['spiking','ann'],default='spiking')
     p.add_argument('--data-root',type=Path,required=True)
     p.add_argument('--output',type=Path,required=True)
     p.add_argument('--manifest',type=Path,default=ROOT/'configs/synthetic-split.json')
@@ -69,8 +79,9 @@ def evaluate(model,dataset,rows,device):
 
 def checkpoint(a,model,optimizer,scheduler,step):
     temporary=a.output/'checkpoint.tmp'
+    _,model_name,architecture=pilot_definition(a.model)
     torch.save(dict(model=model.state_dict(),optimizer=optimizer.state_dict(),scheduler=scheduler.state_dict(),
-                    step=step,model_name=MODEL_NAME,architecture=ARCHITECTURE,upstream_revision=UPSTREAM_REVISION,
+                    step=step,model_name=model_name,architecture=architecture,upstream_revision=UPSTREAM_REVISION,
                     batch_size=a.batch_size,accumulation=a.accumulation),temporary)
     temporary.replace(a.output/'checkpoint-last.pt')
 
@@ -89,16 +100,18 @@ def main():
     for row in manifest['dev']:first.setdefault(row['scene'],row)
     scene_rows=list(first.values())
     periodic=[scene_rows[i] for i in np.linspace(0,len(scene_rows)-1,min(a.eval_pairs,len(scene_rows)),dtype=int)]
-    model,criterion,cfg=build_spiking_nmrf(a.seed)
+    builder,model_name,architecture=pilot_definition(a.model)
+    model,criterion,cfg=builder(a.seed)
     model.to(a.device);criterion.to(a.device)
     cfg.SEED=a.seed;cfg.SOLVER.MAX_ITER=a.steps;cfg.SOLVER.BASE_LR=a.learning_rate
     cfg.SOLVER.IMS_PER_BATCH=a.batch_size*a.accumulation
     cfg.DATASETS.CROP_SIZE=a.crop;cfg.DATASETS.TRAIN=['native-synthetic-manifest'];cfg.DATASETS.TEST=[]
     record_run(a,cfg,manifest)
     config=json.loads((a.output/'config.json').read_text())
-    config.update(model=MODEL_NAME,architecture=ARCHITECTURE,precision='FP32',periodic_dev_rows=periodic,
+    config.update(model=model_name,architecture=architecture,precision='FP32',periodic_dev_rows=periodic,
                   final_dev_rows=manifest['dev'],initialization='fresh seed; no trained ANN decoder transfer',
-                  runtime='dense torch simulation of binary spike operations; no energy claim')
+                  runtime=('dense torch simulation of binary spike operations; no energy claim' if a.model=='spiking'
+                           else 'continuous CNN parent; budget-matched control, not a neuron-only ablation'))
     (a.output/'config.json').write_text(json.dumps(config,indent=2))
     for name in ['spiking_nmrf.py','run_spiking_nmrf.py','evaluate_nmrf.py']:
         shutil.copyfile(ROOT/name,a.output/name)
@@ -107,7 +120,7 @@ def main():
     start=0
     if a.resume:
         state=torch.load(a.resume,map_location='cpu',weights_only=False)
-        if state['model_name']!=MODEL_NAME or state['architecture']!=ARCHITECTURE or state['upstream_revision']!=UPSTREAM_REVISION:raise ValueError('Incompatible checkpoint')
+        if state['model_name']!=model_name or state.get('architecture')!=architecture or state['upstream_revision']!=UPSTREAM_REVISION:raise ValueError('Incompatible checkpoint')
         if state['scheduler']['total_steps']!=a.steps:raise ValueError('Resume must preserve scheduler horizon')
         model.load_state_dict(state['model']);optimizer.load_state_dict(state['optimizer']);scheduler.load_state_dict(state['scheduler']);start=state['step']
         del state
@@ -122,7 +135,7 @@ def main():
         if a.command=='benchmark' and step==start+a.benchmark_warmup+1:
             torch.cuda.synchronize();measured=time.monotonic();torch.cuda.reset_peak_memory_stats()
         collect=step==start+1 or step%a.log_every==0 or step==final
-        model.parent.backbone.collect_activity(collect)
+        if a.model=='spiking':model.parent.backbone.collect_activity(collect)
         optimizer.zero_grad(set_to_none=True);total_loss=0.
         for micro in range(a.accumulation):
             try:batch=next(iterator)
@@ -138,7 +151,8 @@ def main():
             if not bool((channel_gradient>0).all()):raise RuntimeError('Some sensor bins lack a gradient')
             qk_grad={n:float(m.qkv.conv.weight.grad.abs().sum()) for n,m in model.parent.backbone.named_modules() if hasattr(m,'qkv')}
             if not all(v>0 and np.isfinite(v) for v in qk_grad.values()):raise RuntimeError('Missing spiking attention gradients')
-            before=model.parent.backbone.stem1.conv.weight.detach().clone()
+            stem=model.parent.backbone.stem1.conv if a.model=='spiking' else model.parent.backbone.conv1
+            before=stem.weight.detach().clone()
         optimizer.step()
         if a.command!='preflight':scheduler.step()
         if collect:
@@ -146,10 +160,10 @@ def main():
                         learning_rate=scheduler.get_last_lr()[0],batch_size=a.batch_size,
                         peak_cuda_bytes=torch.cuda.max_memory_allocated() if a.device=='cuda' else None,
                         reserved_cuda_bytes=torch.cuda.memory_reserved() if a.device=='cuda' else None,
-                        spike_rates=model.parent.backbone.activity()))
-        model.parent.backbone.collect_activity(False)
+                        spike_rates=model.parent.backbone.activity() if a.model=='spiking' else {}))
+        if a.model=='spiking':model.parent.backbone.collect_activity(False)
         if a.command=='preflight':
-            if torch.equal(before,model.parent.backbone.stem1.conv.weight):raise RuntimeError('Stem failed to update')
+            if torch.equal(before,stem.weight):raise RuntimeError('Stem failed to update')
             model.eval()
             with torch.no_grad():pred=model(left[...,:-1,:-1],right[...,:-1,:-1])['disp']
             if pred.shape!=target[...,:-1,:-1].shape or not torch.isfinite(pred).all():raise RuntimeError('Evaluation/padding failed')
