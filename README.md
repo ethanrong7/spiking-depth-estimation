@@ -627,6 +627,143 @@ savings. The 3070 CUDA-11.8 environment is separate from a Blackwell-capable 509
 environment. The existing `evaluate_nmrf.py` CLI loads the continuous parent;
 use this pilot runner's validation path for spiking-backbone checkpoints.
 
+### Selective spatial NMRF prototype
+
+[`nmrf_selective_updates.py`](nmrf_selective_updates.py) is an opt-in, trainable
+replacement for the spatial message block in inference layers 1–3 (zero-based).
+It gathers spatial pixels before projection and the FFN, retains all disparity
+candidates at each selected pixel, and scatters updates back. Skipped query pixels
+retain their incoming features. The default legacy selector uses a fixed phase
+per layer. Compact support uses the same selected pixels for queries, keys, and
+values. The optional `shift_aware_alternating_global_column_parity` selector
+alternates the selected column parity after accounting for the window shift.
+
+The `continuous`, `tanh` and `ternary` modes can use either selector.
+Coding applies to the learned content Q/K projections. Geometric projections
+remain continuous, and their cross terms with content change in the QK product
+when coding is enabled. Explicit positional interactions, values, softmax and
+residuals remain continuous. Ternary mode uses detached per-token/head RMS
+scaling and an identity straight-through derivative in a single forward pass.
+
+```python
+from nmrf_runtime import build_native_nmrf
+from nmrf_selective_updates import install_selective_updates
+
+model, criterion, cfg = build_native_nmrf(seed=1234)
+architecture = install_selective_updates(
+    model, keep_fraction=0.5, coding="ternary", layers=(1, 2, 3))
+# Construct the optimizer after installation. Save `architecture` with every
+# checkpoint, and reinstall that configuration before loading the weight state.
+```
+
+[`run_nmrf_finetune.py`](run_nmrf_finetune.py) supports matched native NMRF
+fine-tuning with `--variant original`, `continuous`, `ternary` or `tanh`.
+Use `--init-checkpoint` for weights-only initialization and a fresh optimizer
+and schedule. Set `--selector` to opt into alternating coverage for a selective
+variant. The runner saves architecture configuration with the weights, along
+with the source snapshot, split, batch and crop trace, and full-resolution
+development metrics at initialization and at the fixed training endpoint.
+
+The query-only prototype uses `attention_support="selected_queries_all_keys_values"`
+in `install_selective_updates`. It projects keys and values for every pixel in
+the window and uses the original mask rows for the selected queries. CPU tests
+verify forward and backward equivalence at selected rows, shifted masks, and
+counted contractions. Frozen-checkpoint GPU evaluation and CUDA Graph timing
+have been exercised for this support mode. The training CLI exposes compact
+support.
+
+```bash
+python -m unittest tests.test_nmrf_selective_updates tests.test_nmrf_query_only -v
+python probe_nmrf_selective_updates.py \
+  --output "$SPIKE_OUTPUT_ROOT/selective-nmrf-cpu"
+```
+
+The probe uses random weights and tiny generated inputs. It checks full-retention
+equivalence, unchanged inactive features and registered contraction counts; it
+does not measure EPE, GPU speed or energy. Counting fewer contractions does not
+account for gather/scatter, coding or extra kernel launches. All three coding
+modes execute the same number of contractions at the same retention fraction.
+
+For a frozen ANN transplant benchmark, supply the ANN checkpoint and its saved
+configuration. Run each variant and execution mode in a separate process.
+
+```bash
+python benchmark_nmrf_selective_updates.py \
+  --variant continuous --execution graph \
+  --checkpoint "$SPIKE_OUTPUT_ROOT/ann-control-2k/checkpoint-last.pt" \
+  --config "$SPIKE_OUTPUT_ROOT/ann-control-2k/config.json" \
+  --data-root "$SPIKE_DATA_ROOT" \
+  --output "$SPIKE_OUTPUT_ROOT/selective-continuous-graph"
+```
+
+For frozen transplants, `--selector` and `--attention-support` choose the
+selective architecture. The `full` variant uses full retention and continuous
+coding as a control. EPE for a selective transplant measures the immediate
+effect of applying that architecture to the frozen ANN weights.
+
+To benchmark a trained endpoint, supply its `checkpoint-last.pt` and
+`config.json` from the same run. Set `--variant` to match the saved variant. The
+benchmark restores the saved architecture before loading weights and rejects
+conflicting retention, selector, or attention-support overrides. Its EPE
+measures the recorded fine-tuning endpoint.
+
+Both benchmark paths use batch one, native resolution, FP32 with TF32 disabled,
+and all saved Dev pairs with five timed forwards per pair by default. They record
+counted contractions, CUDA and wall latency, peak allocated VRAM, and pixel- and
+scene-level EPE.
+
+### Reduced-width spatial NMRF heads
+
+[`nmrf_head_compression.py`](nmrf_head_compression.py) provides an opt-in
+Python API for retaining two original 32-channel attention heads in each of
+the five spatial inference blocks. It keeps the original pixels, candidates,
+attention masks, 128-channel residual state, and FFN. The module supports
+continuous and ternary content projections and accepts caller-supplied head
+pairs and optional fitted output projections.
+
+`install_head_compression` returns architecture metadata for the reduced
+weights. `restore_head_compression` rebuilds the saved head layout and strictly
+loads its weights, including the output projections. CPU reference and
+checkpoint checks are covered by `tests.test_nmrf_head_compression`. The module
+has also been exercised in frozen GPU inference and full-width reference
+comparisons. The fitted projection artifacts are kept outside the repository.
+
+### Local binary support prototype
+
+[`nmrf_binary_support.py`](nmrf_binary_support.py) provides an opt-in spatial
+operator for NMRF inference layers 1–3 by default; `layers=(0, 1, 2, 3, 4)`
+selects all five spatial blocks. `layers=(1, 2, 3, 4)` retains the first
+dense spatial block. The layer set is saved in the architecture metadata. It retains every candidate's continuous
+state and FFN. Each query considers its own pixel and four cardinal neighbors,
+subject to the original masks and disparity compatibility. Binary Q/K feature
+coincidences weight continuous values and relative-position values, normalized
+by `max(1, sum(weights))`. This replaces the original softmax and its geometric
+and relative-position score terms; the continuous control uses sigmoid features
+with the same local operator. It is a single-pass hybrid, not a temporal SNN.
+
+```python
+from nmrf_binary_support import install_binary_support, take_support_activity
+
+# Install before constructing the optimizer. Save this metadata with weights.
+architecture = install_binary_support(model, support_mode="binary")
+# After a training forward, consume the differentiable mean Q/K activity:
+activity = take_support_activity(model)
+# Optional objective: supervised_loss + coefficient * supervised_loss.detach() * activity
+```
+
+The reference path supports autograd with a hard binary forward and sigmoid
+surrogate. [`nmrf_binary_support_cuda.py`](nmrf_binary_support_cuda.py) supplies
+an optional inference backend that packs 32 channels per word, uses AND/popcount,
+and skips value accumulation for zero support. It also supplies a fused
+continuous control. The verified loader targets Windows, CUDA 11.8 and the
+RTX 3070 (`sm_86`); it is not a verified RTX 5090 backend. Kernel compilation and
+loading precede timed inference. Floating-point reductions can differ from the
+reference, so evaluate the deployed backend as well as the training reference.
+
+Run the focused CPU checks with
+`python -m unittest tests.test_nmrf_binary_support -v`.
+Experiment protocols, frozen runners, data and results remain outside Git.
+
 ### Retained experiment code
 
 These files preserve additional architectures, controls and probes. Older campaign entry points can depend on frozen source capsules, registrations, old configurations or checkpoints that were deliberately excluded. They are retained as implementation source, not as ready-to-resume old jobs. Use the fresh runner for the listed model families; adapt another experiment's configuration explicitly before running it. No old cluster controller is enabled by the new entry point.
