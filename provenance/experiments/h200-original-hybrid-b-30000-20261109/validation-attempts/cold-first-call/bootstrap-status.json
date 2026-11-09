@@ -1,0 +1,6 @@
+{
+  "phase": "failed",
+  "pid": 596,
+  "updated_utc": "2026-11-09T03:14:56.427509+00:00",
+  "error": "Traceback (most recent call last):\n  File \"/workspace/bootstrap_cuda.py\", line 47, in <module>\n    run([python,str(exp/'validate_cuda_initialization.py'),*common],'initialization-parity.log',env)\n  File \"/workspace/bootstrap_cuda.py\", line 13, in run\n    assert r.returncode in allowed,(cmd,r.returncode,str(root/log))\n           ^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: (['/workspace/venv/bin/python', '/workspace/source-cuda-28ca-v1/projects/snn-depth-estimation/experiments/b-attention-mechanism-v1/validate_cuda_initialization.py', '--initialization', '/workspace/outputs/original-hybrid-b-h200-30000-v1/initialization/seed-1234.pt', '--data-root', '/datasets/Synthetic', '--manifest', '/workspace/source-cuda-28ca-v1/configs/synthetic-split.json', '--output', '/workspace/outputs/original-hybrid-b-h200-30000-v1/initialization-parity.json'], 1, '/workspace/outputs/original-hybrid-b-h200-30000-v1/initialization-parity.log')\n"
+}

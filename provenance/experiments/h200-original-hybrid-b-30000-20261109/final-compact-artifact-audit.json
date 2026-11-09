@@ -1,0 +1,19 @@
+{
+  "status": "passed",
+  "scope": "Final compact records, all Dev evaluations and 60,000 raw training rows synced locally and consistent with passed remote endpoint audits",
+  "models": 2,
+  "updates_per_model": 30000,
+  "presentations_per_model": 240000,
+  "dev_evaluations_per_model": 17,
+  "observed_utc": "2026-11-09T08:41:33.515573+00:00",
+  "local_raw_records": {
+    "original-non-i": {
+      "training_rows": 30000,
+      "evaluations": 17
+    },
+    "hybrid-b": {
+      "training_rows": 30000,
+      "evaluations": 17
+    }
+  }
+}

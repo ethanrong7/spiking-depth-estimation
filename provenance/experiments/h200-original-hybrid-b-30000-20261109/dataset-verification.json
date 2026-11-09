@@ -1,0 +1,10 @@
+{
+  "status": "passed",
+  "files": 3060,
+  "raw_bytes": 1430440514,
+  "source_archive_sha256": "73a57a71de52a21d8016612087c24f876eb82a4930dabc898bd3cd5f737fe0bf",
+  "delivery": "hash-verified public dataset mirror",
+  "manifest_sha256": "bad4369b6fd8b0cdf871a20b1727c2d9b59733a16bd33f75904227bdfef4510a",
+  "scope": "960 Train + 60 Dev frames only; no Test/confirmation",
+  "verified_utc": "2026-11-09T03:22:50.373221+00:00"
+}

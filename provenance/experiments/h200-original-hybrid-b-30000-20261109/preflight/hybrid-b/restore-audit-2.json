@@ -1,0 +1,15 @@
+{
+  "status": "passed",
+  "update": 2,
+  "ranks": [
+    {
+      "rank": 0,
+      "model_hash_exact": true,
+      "optimizer_exact": true,
+      "scheduler_exact": true,
+      "rng_exact": true
+    }
+  ],
+  "order_exact": true,
+  "source_identity": "9d9a1f4d9dfba49fe7f29fc232ce431e0d2697a429118c2aac3ee2012b526b74"
+}

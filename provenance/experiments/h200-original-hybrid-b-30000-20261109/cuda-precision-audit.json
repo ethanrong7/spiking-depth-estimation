@@ -1,0 +1,21 @@
+{
+  "status": "passed_for_pinned_torch_2_7_1",
+  "container_environment": {
+    "TORCH_ALLOW_TF32_CUBLAS_OVERRIDE": "1",
+    "NVIDIA_TF32_OVERRIDE": null,
+    "CUBLAS_WORKSPACE_CONFIG": null
+  },
+  "resolved_worker_flags": {
+    "conv_allow_tf32": true,
+    "matmul_allow_tf32": false,
+    "cudnn_deterministic": true,
+    "cudnn_benchmark": false,
+    "strict_determinism": false
+  },
+  "explanation": "In official PyTorch v2.7.1 the environment variable initializes the Context default only. The worker explicitly sets allow_tf32=False, which sets Float32MatmulPrecision::HIGHEST; the CUBLAS handle selects DEFAULT_MATH from that resolved context. No training policy change/restart required.",
+  "primary_sources": [
+    "https://raw.githubusercontent.com/pytorch/pytorch/v2.7.1/aten/src/ATen/Context.h",
+    "https://raw.githubusercontent.com/pytorch/pytorch/v2.7.1/aten/src/ATen/Context.cpp",
+    "https://raw.githubusercontent.com/pytorch/pytorch/v2.7.1/aten/src/ATen/cuda/CublasHandlePool.cpp"
+  ]
+}

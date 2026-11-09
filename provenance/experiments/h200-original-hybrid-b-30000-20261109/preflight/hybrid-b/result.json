@@ -1,0 +1,18 @@
+{
+  "status": "PREFLIGHT_COMPLETED",
+  "updates": 3,
+  "samples_seen": 24,
+  "scheduler_last_epoch": 3,
+  "evaluated": [
+    0,
+    2,
+    3
+  ],
+  "finite_model_optimizer": true,
+  "process_seconds": 3.224882934242487,
+  "endpoint_kind": "preflight",
+  "peak_allocated_mib": 14392.8681640625,
+  "peak_reserved_mib": 16200.0,
+  "world_size": 1,
+  "source_identity": "9d9a1f4d9dfba49fe7f29fc232ce431e0d2697a429118c2aac3ee2012b526b74"
+}

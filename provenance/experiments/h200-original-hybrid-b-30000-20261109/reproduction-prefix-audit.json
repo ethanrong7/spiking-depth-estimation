@@ -1,0 +1,45 @@
+{
+  "observed_utc": "2026-11-09T07:16:54.188721+00:00",
+  "scope": "CPU-only audit of saved H200 checkpoints and committed training prefixes; live jobs unchanged",
+  "runs": [
+    {
+      "model": "original-non-i",
+      "checkpoint": 22000,
+      "all_committed_indices_flips_lr_verified": true,
+      "optimizer_and_scheduler_counters_exact": true,
+      "checkpoint_tensor_hash_verified": true,
+      "presentations": 176000
+    },
+    {
+      "model": "hybrid-b",
+      "checkpoint": 20000,
+      "all_committed_indices_flips_lr_verified": true,
+      "optimizer_and_scheduler_counters_exact": true,
+      "checkpoint_tensor_hash_verified": true,
+      "presentations": 160000,
+      "branch_changes_from_initial_l2": {
+        "placement.output.weight": 2.530775308609009,
+        "placement.codes.q.weight": 0.5225602388381958,
+        "placement.codes.k.weight": 0.634300708770752,
+        "placement.codes.v.weight": 0.8857595920562744
+      },
+      "latest_branch_diagnostics": {
+        "update": 20000,
+        "placement_gradients": {
+          "input.weight": 0.05714667961001396,
+          "input.bias": 0.006311145611107349,
+          "codes.norm.weight": 0.007523984648287296,
+          "codes.norm.bias": 0.006678859703242779,
+          "codes.q.weight": 0.020227618515491486,
+          "codes.q.bias": 0.0020305030047893524,
+          "codes.k.weight": 0.023556208238005638,
+          "codes.k.bias": 0.00027005322044715285,
+          "codes.v.weight": 0.014742900617420673,
+          "codes.v.bias": 0.00504422327503562,
+          "output.weight": 0.022831495851278305,
+          "output.bias": 0.020996471866965294
+        }
+      }
+    }
+  ]
+}

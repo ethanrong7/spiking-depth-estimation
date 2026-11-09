@@ -1,0 +1,27 @@
+{
+  "study": "original-hybrid-b-h200-30000-v1",
+  "backend": "cuda",
+  "source_revision": "28ca495f0b00e750735d38fe861cf9e15712b833",
+  "source_identity": "9d9a1f4d9dfba49fe7f29fc232ce431e0d2697a429118c2aac3ee2012b526b74",
+  "models": [
+    "original-non-i",
+    "hybrid-b"
+  ],
+  "seed": 1234,
+  "updates": 30000,
+  "schedule_total": 30000,
+  "physical_batch": 4,
+  "accumulation": 2,
+  "effective_batch": 8,
+  "device_count_per_model": 1,
+  "allocation": {
+    "original-non-i": "GPU-ecddde34-aa9c-ff1d-dd55-b3f978f84762",
+    "hybrid-b": "GPU-b5d1f705-29d3-eafa-52ba-da03d11fbeab"
+  },
+  "execution_policy": "historical_native_CUDA_FP32_cudnn_TF32_on_matmul_TF32_off_cudnn_deterministic_on_strict_off",
+  "optimizer": "native AdamW defaults foreach/fused omitted",
+  "dataset": "/datasets/Synthetic",
+  "output": "/workspace/outputs/original-hybrid-b-h200-30000-v1",
+  "npu_runs": "untouched; separate host/backend/output",
+  "created_utc": "2026-11-09T03:23:10.313230+00:00"
+}

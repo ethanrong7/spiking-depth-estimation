@@ -1,0 +1,51 @@
+{
+  "status": "passed",
+  "native_tensor_count": 348,
+  "native_initial_sha256": "8ceac15b09ce188f9ee52ad5a8eca8e68727cbbb2887a012874d7246dc6495ca",
+  "hybrid_initial_sha256": "b37335857fd34f9f5aaa1cf203f906304f7edbd965447ff7dad3953172d47bd4",
+  "shared_initial_sha256": "2085df6ea20073c3a9804d79f6baee94e8e9bfe41facda47e3f292fd3cc9394d",
+  "initialization_file_sha256": "060ecac6f028173bdffce4f7914e1da1fb7a7fea66fc64b32996d6cb7a147b25",
+  "tolerance": {
+    "atol": 1e-05,
+    "rtol": 1e-05
+  },
+  "warmup_forward_iterations": 16,
+  "warmup_optimizer_updates": 0,
+  "cold_to_warm_max_abs_by_model": [
+    3.081560134887695e-05,
+    0.0
+  ],
+  "warm_self_repeat_max_abs_by_model": [
+    0.0,
+    0.0
+  ],
+  "zero_B_feature_residual_exact": true,
+  "model_state_unchanged_after_warmup": true,
+  "native_batch_shape": [
+    4,
+    50,
+    250,
+    400
+  ],
+  "initial_prediction_max_abs": 0.0,
+  "input_decode_exact": true,
+  "environment": {
+    "python": "3.12.3 (main, Feb  4 2025, 14:48:35) [GCC 13.3.0]",
+    "torch": "2.7.1+cu128",
+    "cuda": "12.8",
+    "cudnn": 90701,
+    "gpu_name": "NVIDIA H200",
+    "gpu_uuid": "ecddde34-aa9c-ff1d-dd55-b3f978f84762",
+    "device_count": 1,
+    "visible_devices": "GPU-ecddde34-aa9c-ff1d-dd55-b3f978f84762",
+    "precision": {
+      "dtype": "float32",
+      "mixed_precision": false,
+      "deterministic_algorithms": false,
+      "cudnn_deterministic": true,
+      "cudnn_benchmark": false,
+      "conv_allow_tf32": true,
+      "matmul_allow_tf32": false
+    }
+  }
+}

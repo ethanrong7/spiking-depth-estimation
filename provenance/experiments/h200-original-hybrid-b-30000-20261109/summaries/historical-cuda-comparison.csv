@@ -1,0 +1,3 @@
+model,seed,update,h200_epe,historical_cuda_epe,h200_minus_historical_epe,h200_bad3_percent,historical_cuda_bad3_percent,scope
+original-non-i,1234,30000,2.166782640914122,2.691127,-0.5243443590858776,10.219583031783502,10.712,Historical reference aggregates from Markdown; fresh H200 pair is a separate native CUDA replicate; no cross-backend kernel-parity claim
+hybrid-b,1234,30000,2.289049070080121,2.034117,0.254932070080121,9.795966373384,9.626333,Historical reference aggregates from Markdown; fresh H200 pair is a separate native CUDA replicate; no cross-backend kernel-parity claim

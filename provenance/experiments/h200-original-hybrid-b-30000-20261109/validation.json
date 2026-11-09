@@ -1,0 +1,21 @@
+{
+  "status": "passed",
+  "source_identity": "9d9a1f4d9dfba49fe7f29fc232ce431e0d2697a429118c2aac3ee2012b526b74",
+  "checks": [
+    {
+      "model": "original-non-i",
+      "status": "passed",
+      "native_updates": 3,
+      "exact_restore_update": 2
+    },
+    {
+      "model": "hybrid-b",
+      "status": "passed",
+      "native_updates": 3,
+      "exact_restore_update": 2
+    }
+  ],
+  "initialization_parity": "passed",
+  "dataset": "3060 raw file hashes passed",
+  "validated_utc": "2026-11-09T03:23:10.313448+00:00"
+}

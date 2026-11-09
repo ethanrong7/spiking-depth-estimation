@@ -1,0 +1,25 @@
+{
+  "event": {
+    "time_utc": "2026-11-09T05:04:32.675048+00:00",
+    "kind": "user_authorized_gpu_clock_defaults_reset",
+    "model": "hybrid-b",
+    "physical_gpu": 7,
+    "gpu_uuid": "GPU-b5d1f705-29d3-eafa-52ba-da03d11fbeab",
+    "old_application_graphics_mhz": 1335,
+    "new_application_graphics_mhz": 1980,
+    "observed_sm_before_mhz": 1335,
+    "observed_sm_after_mhz": 1905,
+    "first_reset_snapshot_update": 8284,
+    "completed_before_update": 8437,
+    "exact_update_boundary": "not measured; exclude transition interval from timing comparisons",
+    "worker_pid": 1315,
+    "worker_restarted": false,
+    "math_and_architecture_settings": "unchanged",
+    "commands": [
+      "nvidia-smi -i GPU-b5d1f705-29d3-eafa-52ba-da03d11fbeab --reset-applications-clocks",
+      "nvidia-smi -i GPU-b5d1f705-29d3-eafa-52ba-da03d11fbeab --reset-gpu-clocks"
+    ]
+  },
+  "worker_alive": true,
+  "latest_step_seconds": 0.5138241052627563
+}

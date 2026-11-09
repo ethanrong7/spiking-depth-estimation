@@ -1,0 +1,4 @@
+# Preserve exact archived bytes; generated formats retain their native whitespace.
+* -text
+figures/*.svg -whitespace
+summaries/*.csv whitespace=cr-at-eol

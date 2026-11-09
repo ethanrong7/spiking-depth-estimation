@@ -1,0 +1,142 @@
+{
+  "status": "audited_30k_pair",
+  "seed": 1234,
+  "endpoint": 30000,
+  "original": 2.166782640914122,
+  "hybrid_b": 2.289049070080121,
+  "original_minus_hybrid_epe": -0.12226642916599895,
+  "hybrid_relative_epe_reduction_percent": -5.642763923677051,
+  "original_minus_hybrid_bad3_pp": 0.4236166583995029,
+  "hybrid_scene_wins": 16,
+  "scene_count": 30,
+  "median_paired_scene_difference": 0.01331590861082077,
+  "largest_scene_differences": [
+    {
+      "update": 30000,
+      "scene": "scene_0134",
+      "original_epe": 10.236000418663025,
+      "hybrid_b_epe": 4.414093732833862,
+      "original_minus_hybrid_epe": 5.821906685829163,
+      "original_bad3_percent": 52.8479962348938,
+      "hybrid_b_bad3_percent": 34.853498458862305
+    },
+    {
+      "update": 30000,
+      "scene": "scene_0142",
+      "original_epe": 3.798410713672638,
+      "hybrid_b_epe": 9.586338192224503,
+      "original_minus_hybrid_epe": -5.787927478551865,
+      "original_bad3_percent": 22.899999618530273,
+      "hybrid_b_bad3_percent": 19.477998852729797
+    },
+    {
+      "update": 30000,
+      "scene": "scene_0135",
+      "original_epe": 2.5985442996025085,
+      "hybrid_b_epe": 5.379901200532913,
+      "original_minus_hybrid_epe": -2.7813569009304047,
+      "original_bad3_percent": 16.686500310897827,
+      "hybrid_b_bad3_percent": 20.569000720977783
+    },
+    {
+      "update": 30000,
+      "scene": "scene_0144",
+      "original_epe": 4.803293973207474,
+      "hybrid_b_epe": 5.733756333589554,
+      "original_minus_hybrid_epe": -0.9304623603820801,
+      "original_bad3_percent": 11.982999086380005,
+      "hybrid_b_bad3_percent": 11.925499439239502
+    },
+    {
+      "update": 30000,
+      "scene": "scene_0125",
+      "original_epe": 2.5153785347938538,
+      "hybrid_b_epe": 3.0962408781051636,
+      "original_minus_hybrid_epe": -0.5808623433113098,
+      "original_bad3_percent": 16.63749933242798,
+      "hybrid_b_bad3_percent": 16.45599937438965
+    }
+  ],
+  "historical_comparisons": [
+    {
+      "model": "original-non-i",
+      "seed": 1234,
+      "update": 30000,
+      "h200_epe": 2.166782640914122,
+      "historical_cuda_epe": 2.691127,
+      "h200_minus_historical_epe": -0.5243443590858776,
+      "h200_bad3_percent": 10.219583031783502,
+      "historical_cuda_bad3_percent": 10.712,
+      "scope": "Historical reference aggregates from Markdown; fresh H200 pair is a separate native CUDA replicate; no cross-backend kernel-parity claim"
+    },
+    {
+      "model": "hybrid-b",
+      "seed": 1234,
+      "update": 30000,
+      "h200_epe": 2.289049070080121,
+      "historical_cuda_epe": 2.034117,
+      "h200_minus_historical_epe": 0.254932070080121,
+      "h200_bad3_percent": 9.795966373384,
+      "historical_cuda_bad3_percent": 9.626333,
+      "scope": "Historical reference aggregates from Markdown; fresh H200 pair is a separate native CUDA replicate; no cross-backend kernel-parity claim"
+    }
+  ],
+  "limitations": [
+    "One training seed; scenes are not independent training replicates",
+    "Comparison tests the complete B addition, not a uniquely spiking mechanism",
+    "Reference CUDA values are historical aggregates; H200 values are fresh native CUDA runs",
+    "No Test/confirmation data accessed; no best-checkpoint selection"
+  ],
+  "gap_concentration": {
+    "top5_absolute_gap_share_percent": 83.44582196690989,
+    "top5_absolute_gap_signed_mean_contribution": -0.14195674657821655,
+    "hardest_original_5_scenes": [
+      {
+        "update": 30000,
+        "scene": "scene_0123",
+        "original_epe": 13.53290855884552,
+        "hybrid_b_epe": 12.967634439468384,
+        "original_minus_hybrid_epe": 0.5652741193771362,
+        "original_bad3_percent": 39.89899921417236,
+        "hybrid_b_bad3_percent": 51.43699836730957
+      },
+      {
+        "update": 30000,
+        "scene": "scene_0134",
+        "original_epe": 10.236000418663025,
+        "hybrid_b_epe": 4.414093732833862,
+        "original_minus_hybrid_epe": 5.821906685829163,
+        "original_bad3_percent": 52.8479962348938,
+        "hybrid_b_bad3_percent": 34.853498458862305
+      },
+      {
+        "update": 30000,
+        "scene": "scene_0129",
+        "original_epe": 5.283431321382523,
+        "hybrid_b_epe": 5.234922096133232,
+        "original_minus_hybrid_epe": 0.048509225249290466,
+        "original_bad3_percent": 28.52649848908186,
+        "hybrid_b_bad3_percent": 28.716497525572777
+      },
+      {
+        "update": 30000,
+        "scene": "scene_0144",
+        "original_epe": 4.803293973207474,
+        "hybrid_b_epe": 5.733756333589554,
+        "original_minus_hybrid_epe": -0.9304623603820801,
+        "original_bad3_percent": 11.982999086380005,
+        "hybrid_b_bad3_percent": 11.925499439239502
+      },
+      {
+        "update": 30000,
+        "scene": "scene_0142",
+        "original_epe": 3.798410713672638,
+        "hybrid_b_epe": 9.586338192224503,
+        "original_minus_hybrid_epe": -5.787927478551865,
+        "original_bad3_percent": 22.899999618530273,
+        "hybrid_b_bad3_percent": 19.477998852729797
+      }
+    ],
+    "hardest_original_5_signed_mean_contribution": -0.009423326949278514
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "observed_utc": "2026-11-09T05:48:31.499310+00:00",
+  "scope": "Read-only H200 GPUs 6 and 7; no NPU access",
+  "our_container_host_pids": [
+    2445388,
+    2901707,
+    2901708
+  ],
+  "other_compute_processes": [
+    {
+      "gpu": 6,
+      "pid": 942884,
+      "memory_mib": 36532,
+      "sm_util_samples_percent": [
+        86,
+        54,
+        54
+      ]
+    },
+    {
+      "gpu": 7,
+      "pid": 942885,
+      "memory_mib": 36590,
+      "sm_util_samples_percent": [
+        49,
+        44,
+        66
+      ]
+    }
+  ],
+  "our_training_sm_util_samples_percent": {
+    "gpu6": [
+      12,
+      43,
+      44
+    ],
+    "gpu7": [
+      49,
+      54,
+      33
+    ]
+  },
+  "actions": "none; all processes left running",
+  "interpretation": "Shared GPU computation coincides with slowdown from ~0.51 to ~0.92 sec/update; timing estimates vary with contention."
+}

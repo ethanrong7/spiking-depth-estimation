@@ -1,0 +1,14 @@
+{
+  "original-non-i": {
+    "path": "seed-1234/original-non-i/train.jsonl.gz",
+    "rows": 30000,
+    "uncompressed_bytes": 27471277,
+    "uncompressed_sha256": "445854022a7dd40ab0dd7ac4fc25ad158beb04121319e6be64198474ca892704"
+  },
+  "hybrid-b": {
+    "path": "seed-1234/hybrid-b/train.jsonl.gz",
+    "rows": 30000,
+    "uncompressed_bytes": 27580613,
+    "uncompressed_sha256": "646635aed29bc7fcfc7523096bf5858c94db790bf2471597a5dfe995ef38155e"
+  }
+}

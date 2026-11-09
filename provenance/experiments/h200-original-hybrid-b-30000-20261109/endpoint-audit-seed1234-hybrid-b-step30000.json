@@ -1,0 +1,183 @@
+{
+  "status": "passed",
+  "seed": 1234,
+  "model": "hybrid-b",
+  "endpoint": 30000,
+  "observed_utc": "2026-11-09T08:40:25.095745+00:00",
+  "checks": {
+    "frozen_source": "9d9a1f4d9dfba49fe7f29fc232ce431e0d2697a429118c2aac3ee2012b526b74",
+    "named_and_last_state": "exact",
+    "checkpoint_files": {
+      "last.pt": {
+        "bytes": 146259549,
+        "sha256": "66641e4921817990e5c53c059df21b147b18af618d06224205f0d1ef58d2f4b9"
+      },
+      "step-30000.pt": {
+        "bytes": 146259549,
+        "sha256": "66641e4921817990e5c53c059df21b147b18af618d06224205f0d1ef58d2f4b9"
+      }
+    },
+    "retained_7500_checkpoint": {
+      "sha256": "242b79f6e81686d9cc07765a766651f6ae35eeb47c09c5ff665e4e208b72097c",
+      "bytes": 146259485
+    },
+    "current_configuration": {
+      "study": "original-hybrid-b-h200-30000-v1",
+      "backend": "cuda",
+      "model": "hybrid-b",
+      "arm": "B",
+      "seed": 1234,
+      "placement_seed": 2017,
+      "augmentation_seed": 1234,
+      "updates": 30000,
+      "schedule_total": 30000,
+      "effective_batch": 8,
+      "physical_batch": 4,
+      "accumulation": 2,
+      "world_size": 1,
+      "gradient_reduction": "none_single_device_valid_count_weighted_two_microbatch_accumulation",
+      "augmentation": "hv",
+      "eval_updates": [
+        0,
+        250,
+        500,
+        1000,
+        1500,
+        2500,
+        5000,
+        7500,
+        10000,
+        12500,
+        15000,
+        17500,
+        20000,
+        22500,
+        25000,
+        27500,
+        30000
+      ],
+      "prefetch_depth": 2,
+      "prefetch_threads": 2,
+      "manifest_sha256": "bad4369b6fd8b0cdf871a20b1727c2d9b59733a16bd33f75904227bdfef4510a",
+      "initial_state_sha256": "b37335857fd34f9f5aaa1cf203f906304f7edbd965447ff7dad3953172d47bd4",
+      "train_iterations": 16,
+      "dev_iterations": 32,
+      "dtype": "float32",
+      "optimizer": {
+        "name": "AdamW",
+        "max_lr": 0.0002,
+        "betas": [
+          0.9,
+          0.999
+        ],
+        "amsgrad": false,
+        "weight_decay": 1e-05,
+        "eps": 1e-08,
+        "foreach": null,
+        "fused": null,
+        "gradient_clip": 1.0
+      },
+      "scheduler": {
+        "name": "OneCycleLR",
+        "total_steps": 30000,
+        "pct_start": 0.01,
+        "cycle_momentum": false,
+        "anneal_strategy": "linear",
+        "div_factor": 25.0,
+        "final_div_factor": 10000.0
+      },
+      "execution": {
+        "deterministic_algorithms": false,
+        "cudnn_deterministic": true,
+        "cudnn_benchmark": false,
+        "cudnn_allow_tf32": true,
+        "matmul_allow_tf32": false
+      },
+      "loss_implementation": "native_boolean_indexed_masked_mean",
+      "diagnostic_every": 100,
+      "checkpoint_every": 500,
+      "status_every": 25,
+      "initial_native_state_sha256": "8ceac15b09ce188f9ee52ad5a8eca8e68727cbbb2887a012874d7246dc6495ca",
+      "shared_state_sha256": "2085df6ea20073c3a9804d79f6baee94e8e9bfe41facda47e3f292fd3cc9394d",
+      "device_count": 1,
+      "bad3_unit": "percent",
+      "input_pipeline": {
+        "mode": "preload",
+        "budget_bytes": 12884901888,
+        "workers": 2,
+        "prefetch_depth": 2,
+        "spike_host_dtype": "uint8"
+      }
+    },
+    "all_training_presentations_flips_and_lr": {
+      "updates": 30000,
+      "presentations": 240000,
+      "actual_indices_hv_lr_verified": true
+    },
+    "complete_dev_evaluations": {
+      "updates": [
+        0,
+        250,
+        500,
+        1000,
+        1500,
+        2500,
+        5000,
+        7500,
+        10000,
+        12500,
+        15000,
+        17500,
+        20000,
+        22500,
+        25000,
+        27500,
+        30000
+      ],
+      "frames_each": 60,
+      "scenes_each": 30
+    }
+  },
+  "execution_history": [],
+  "homogeneous_execution_policy_from_initialization": true,
+  "endpoint_metrics": {
+    "update": 30000,
+    "mean_scene_epe": 2.289049070080121,
+    "pooled_epe": 2.289049070080121,
+    "bad1": 27.305048966407774,
+    "bad3": 9.795966373384,
+    "bad5": 6.75596649205933,
+    "scene_epe": {
+      "scene_0120": 0.8339888453483582,
+      "scene_0121": 0.6405466496944427,
+      "scene_0122": 0.5570469051599503,
+      "scene_0123": 12.967634439468384,
+      "scene_0124": 0.8637503981590271,
+      "scene_0125": 3.0962408781051636,
+      "scene_0126": 2.385921061038971,
+      "scene_0127": 0.5651437491178513,
+      "scene_0128": 0.6194904446601868,
+      "scene_0129": 5.234922096133232,
+      "scene_0130": 0.6635882556438446,
+      "scene_0131": 0.5760320127010345,
+      "scene_0132": 0.5295379459857941,
+      "scene_0133": 0.8813692629337311,
+      "scene_0134": 4.414093732833862,
+      "scene_0135": 5.379901200532913,
+      "scene_0136": 1.5494939088821411,
+      "scene_0137": 0.8953765332698822,
+      "scene_0138": 1.210015445947647,
+      "scene_0139": 0.6553783714771271,
+      "scene_0140": 0.6162208020687103,
+      "scene_0141": 1.649911880493164,
+      "scene_0142": 9.586338192224503,
+      "scene_0143": 0.5018113404512405,
+      "scene_0144": 5.733756333589554,
+      "scene_0145": 1.1004609763622284,
+      "scene_0146": 1.5327240228652954,
+      "scene_0147": 1.5457002818584442,
+      "scene_0148": 0.8652763664722443,
+      "scene_0149": 1.0197997689247131
+    }
+  }
+}

@@ -1,0 +1,183 @@
+{
+  "status": "passed",
+  "seed": 1234,
+  "model": "original-non-i",
+  "endpoint": 30000,
+  "observed_utc": "2026-11-09T08:24:50.724211+00:00",
+  "checks": {
+    "frozen_source": "9d9a1f4d9dfba49fe7f29fc232ce431e0d2697a429118c2aac3ee2012b526b74",
+    "named_and_last_state": "exact",
+    "checkpoint_files": {
+      "last.pt": {
+        "bytes": 146134429,
+        "sha256": "bfc5a447a63db9ae8def04382f72b3b3983114b3890574918826ca509b112559"
+      },
+      "step-30000.pt": {
+        "bytes": 146134429,
+        "sha256": "bfc5a447a63db9ae8def04382f72b3b3983114b3890574918826ca509b112559"
+      }
+    },
+    "retained_7500_checkpoint": {
+      "sha256": "7181cb4307a4de2649d8aa639d2a4f90de5f000fe4ea96f567d1a0b81e02f9f3",
+      "bytes": 146134365
+    },
+    "current_configuration": {
+      "study": "original-hybrid-b-h200-30000-v1",
+      "backend": "cuda",
+      "model": "original-non-i",
+      "arm": "original",
+      "seed": 1234,
+      "placement_seed": null,
+      "augmentation_seed": 1234,
+      "updates": 30000,
+      "schedule_total": 30000,
+      "effective_batch": 8,
+      "physical_batch": 4,
+      "accumulation": 2,
+      "world_size": 1,
+      "gradient_reduction": "none_single_device_valid_count_weighted_two_microbatch_accumulation",
+      "augmentation": "hv",
+      "eval_updates": [
+        0,
+        250,
+        500,
+        1000,
+        1500,
+        2500,
+        5000,
+        7500,
+        10000,
+        12500,
+        15000,
+        17500,
+        20000,
+        22500,
+        25000,
+        27500,
+        30000
+      ],
+      "prefetch_depth": 2,
+      "prefetch_threads": 2,
+      "manifest_sha256": "bad4369b6fd8b0cdf871a20b1727c2d9b59733a16bd33f75904227bdfef4510a",
+      "initial_state_sha256": "8ceac15b09ce188f9ee52ad5a8eca8e68727cbbb2887a012874d7246dc6495ca",
+      "train_iterations": 16,
+      "dev_iterations": 32,
+      "dtype": "float32",
+      "optimizer": {
+        "name": "AdamW",
+        "max_lr": 0.0002,
+        "betas": [
+          0.9,
+          0.999
+        ],
+        "amsgrad": false,
+        "weight_decay": 1e-05,
+        "eps": 1e-08,
+        "foreach": null,
+        "fused": null,
+        "gradient_clip": 1.0
+      },
+      "scheduler": {
+        "name": "OneCycleLR",
+        "total_steps": 30000,
+        "pct_start": 0.01,
+        "cycle_momentum": false,
+        "anneal_strategy": "linear",
+        "div_factor": 25.0,
+        "final_div_factor": 10000.0
+      },
+      "execution": {
+        "deterministic_algorithms": false,
+        "cudnn_deterministic": true,
+        "cudnn_benchmark": false,
+        "cudnn_allow_tf32": true,
+        "matmul_allow_tf32": false
+      },
+      "loss_implementation": "native_boolean_indexed_masked_mean",
+      "diagnostic_every": 100,
+      "checkpoint_every": 500,
+      "status_every": 25,
+      "initial_native_state_sha256": "8ceac15b09ce188f9ee52ad5a8eca8e68727cbbb2887a012874d7246dc6495ca",
+      "shared_state_sha256": "2085df6ea20073c3a9804d79f6baee94e8e9bfe41facda47e3f292fd3cc9394d",
+      "device_count": 1,
+      "bad3_unit": "percent",
+      "input_pipeline": {
+        "mode": "preload",
+        "budget_bytes": 12884901888,
+        "workers": 2,
+        "prefetch_depth": 2,
+        "spike_host_dtype": "uint8"
+      }
+    },
+    "all_training_presentations_flips_and_lr": {
+      "updates": 30000,
+      "presentations": 240000,
+      "actual_indices_hv_lr_verified": true
+    },
+    "complete_dev_evaluations": {
+      "updates": [
+        0,
+        250,
+        500,
+        1000,
+        1500,
+        2500,
+        5000,
+        7500,
+        10000,
+        12500,
+        15000,
+        17500,
+        20000,
+        22500,
+        25000,
+        27500,
+        30000
+      ],
+      "frames_each": 60,
+      "scenes_each": 30
+    }
+  },
+  "execution_history": [],
+  "homogeneous_execution_policy_from_initialization": true,
+  "endpoint_metrics": {
+    "update": 30000,
+    "mean_scene_epe": 2.166782640914122,
+    "pooled_epe": 2.166782640914122,
+    "bad1": 28.883282550175984,
+    "bad3": 10.219583031783502,
+    "bad5": 6.810166512553891,
+    "scene_epe": {
+      "scene_0120": 0.9039072096347809,
+      "scene_0121": 0.646603912115097,
+      "scene_0122": 0.5776214599609375,
+      "scene_0123": 13.53290855884552,
+      "scene_0124": 0.985241562128067,
+      "scene_0125": 2.5153785347938538,
+      "scene_0126": 2.2402042746543884,
+      "scene_0127": 0.5446050465106964,
+      "scene_0128": 0.572218656539917,
+      "scene_0129": 5.283431321382523,
+      "scene_0130": 0.5926020443439484,
+      "scene_0131": 0.4927208572626114,
+      "scene_0132": 0.7512637078762054,
+      "scene_0133": 0.9919247329235077,
+      "scene_0134": 10.236000418663025,
+      "scene_0135": 2.5985442996025085,
+      "scene_0136": 1.6354689598083496,
+      "scene_0137": 0.9738329946994781,
+      "scene_0138": 1.3517389297485352,
+      "scene_0139": 0.7112620770931244,
+      "scene_0140": 0.7099327743053436,
+      "scene_0141": 1.2722188830375671,
+      "scene_0142": 3.798410713672638,
+      "scene_0143": 0.4664972424507141,
+      "scene_0144": 4.803293973207474,
+      "scene_0145": 1.2528109550476074,
+      "scene_0146": 1.3931573033332825,
+      "scene_0147": 1.3557941317558289,
+      "scene_0148": 0.9658137559890747,
+      "scene_0149": 0.8480699360370636
+    }
+  }
+}

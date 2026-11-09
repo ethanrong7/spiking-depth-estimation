@@ -1,0 +1,294 @@
+{
+  "True": {
+    "output": {
+      "max_abs": 3.081560134887695e-05,
+      "mean_abs": 3.170378022332443e-06,
+      "allclose_1e5": false,
+      "equal": false,
+      "different_elements": 339925
+    },
+    "repeat": {
+      "max_abs": 3.081560134887695e-05,
+      "mean_abs": 3.170378022332443e-06,
+      "allclose_1e5": false,
+      "equal": false,
+      "different_elements": 339925
+    },
+    "features_before": [
+      {
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "allclose_1e5": true,
+        "equal": true,
+        "different_elements": 0
+      },
+      {
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "allclose_1e5": true,
+        "equal": true,
+        "different_elements": 0
+      }
+    ],
+    "zero_residual": [
+      {
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "allclose_1e5": true,
+        "equal": true,
+        "different_elements": 0
+      },
+      {
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "allclose_1e5": true,
+        "equal": true,
+        "different_elements": 0
+      }
+    ],
+    "layout": {
+      "original": [
+        {
+          "shape": [
+            4,
+            256,
+            64,
+            104
+          ],
+          "stride": [
+            1703936,
+            6656,
+            104,
+            1
+          ],
+          "contiguous": true
+        },
+        {
+          "shape": [
+            4,
+            256,
+            64,
+            104
+          ],
+          "stride": [
+            1703936,
+            6656,
+            104,
+            1
+          ],
+          "contiguous": true
+        }
+      ],
+      "hybrid_before": [
+        {
+          "shape": [
+            4,
+            256,
+            64,
+            104
+          ],
+          "stride": [
+            1703936,
+            6656,
+            104,
+            1
+          ],
+          "contiguous": true
+        },
+        {
+          "shape": [
+            4,
+            256,
+            64,
+            104
+          ],
+          "stride": [
+            1703936,
+            6656,
+            104,
+            1
+          ],
+          "contiguous": true
+        }
+      ],
+      "hybrid_after": [
+        {
+          "shape": [
+            4,
+            256,
+            64,
+            104
+          ],
+          "stride": [
+            1703936,
+            6656,
+            104,
+            1
+          ],
+          "contiguous": true
+        },
+        {
+          "shape": [
+            4,
+            256,
+            64,
+            104
+          ],
+          "stride": [
+            1703936,
+            6656,
+            104,
+            1
+          ],
+          "contiguous": true
+        }
+      ]
+    }
+  },
+  "False": {
+    "output": {
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "allclose_1e5": true,
+      "equal": true,
+      "different_elements": 0
+    },
+    "repeat": {
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "allclose_1e5": true,
+      "equal": true,
+      "different_elements": 0
+    },
+    "features_before": [
+      {
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "allclose_1e5": true,
+        "equal": true,
+        "different_elements": 0
+      },
+      {
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "allclose_1e5": true,
+        "equal": true,
+        "different_elements": 0
+      }
+    ],
+    "zero_residual": [
+      {
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "allclose_1e5": true,
+        "equal": true,
+        "different_elements": 0
+      },
+      {
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "allclose_1e5": true,
+        "equal": true,
+        "different_elements": 0
+      }
+    ],
+    "layout": {
+      "original": [
+        {
+          "shape": [
+            4,
+            256,
+            64,
+            104
+          ],
+          "stride": [
+            1703936,
+            6656,
+            104,
+            1
+          ],
+          "contiguous": true
+        },
+        {
+          "shape": [
+            4,
+            256,
+            64,
+            104
+          ],
+          "stride": [
+            1703936,
+            6656,
+            104,
+            1
+          ],
+          "contiguous": true
+        }
+      ],
+      "hybrid_before": [
+        {
+          "shape": [
+            4,
+            256,
+            64,
+            104
+          ],
+          "stride": [
+            1703936,
+            6656,
+            104,
+            1
+          ],
+          "contiguous": true
+        },
+        {
+          "shape": [
+            4,
+            256,
+            64,
+            104
+          ],
+          "stride": [
+            1703936,
+            6656,
+            104,
+            1
+          ],
+          "contiguous": true
+        }
+      ],
+      "hybrid_after": [
+        {
+          "shape": [
+            4,
+            256,
+            64,
+            104
+          ],
+          "stride": [
+            1703936,
+            6656,
+            104,
+            1
+          ],
+          "contiguous": true
+        },
+        {
+          "shape": [
+            4,
+            256,
+            64,
+            104
+          ],
+          "stride": [
+            1703936,
+            6656,
+            104,
+            1
+          ],
+          "contiguous": true
+        }
+      ]
+    }
+  }
+}

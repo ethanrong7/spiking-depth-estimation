@@ -1,0 +1,5 @@
+# Explicit user-requested publication of this experiment bundle.
+!**/*.jsonl
+!**/*.log
+!**/*.tar.gz
+!*.tar.gz

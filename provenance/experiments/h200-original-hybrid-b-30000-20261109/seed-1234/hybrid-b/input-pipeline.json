@@ -1,0 +1,29 @@
+{
+  "ranks": [
+    {
+      "rank": 0,
+      "mode": "preload",
+      "budget_bytes": 12884901888,
+      "workers": 2,
+      "prefetch_depth": 2,
+      "spike_host_dtype": "uint8",
+      "cached_bytes": 10710000000,
+      "preload_seconds": 8.158283736556768,
+      "cache_scope": "per_process_train_and_dev",
+      "preflight": false,
+      "train_frames": 960,
+      "dev_frames": 60
+    }
+  ],
+  "mode": "preload",
+  "budget_bytes": 12884901888,
+  "workers": 2,
+  "prefetch_depth": 2,
+  "spike_host_dtype": "uint8",
+  "cached_bytes": 10710000000,
+  "preload_seconds": 8.158283736556768,
+  "cache_scope": "per_process_train_and_dev",
+  "preflight": false,
+  "train_frames": 960,
+  "dev_frames": 60
+}

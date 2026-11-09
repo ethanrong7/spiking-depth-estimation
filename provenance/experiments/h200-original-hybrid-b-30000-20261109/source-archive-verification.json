@@ -1,0 +1,8 @@
+{
+  "status": "passed",
+  "registered_files": 628,
+  "unchanged_npu_capsule_files": 625,
+  "source_identity": "9d9a1f4d9dfba49fe7f29fc232ce431e0d2697a429118c2aac3ee2012b526b74",
+  "archive_sha256": "7d761b03d9a88ca62d5038c2cead55ebbd75164bae691ef6d049e8b97f1f73ad",
+  "verified_utc": "2026-11-09T03:27:18.889541+00:00"
+}
