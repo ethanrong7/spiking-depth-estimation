@@ -1,0 +1,3 @@
+model,seed,backend,update,schedule_total,physical_batch,accumulation,effective_batch,mean_scene_epe,bad3_percent,source_identity,execution_policy
+original-non-i,1234,npu,30000,30000,4,2,8,2.3648221646746,10.68895048002402,bd52f3c6e77c611141ff4ed570fa9d22ebbaeaeeb76ffb1980e0f4062d58387f,fixed_FP32_strict_determinism_off_native_loss
+hybrid-b,1234,npu,30000,30000,4,2,8,1.9380879963437716,10.302883766591549,bd52f3c6e77c611141ff4ed570fa9d22ebbaeaeeb76ffb1980e0f4062d58387f,fixed_FP32_strict_determinism_off_native_loss

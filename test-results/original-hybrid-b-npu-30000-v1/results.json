@@ -1,0 +1,66 @@
+{
+  "status": "audited_30k_pair",
+  "seed": 1234,
+  "endpoint": 30000,
+  "original_minus_hybrid_epe": 0.42673416833082833,
+  "hybrid_relative_epe_reduction_percent": 18.04508494149483,
+  "original_minus_hybrid_bad3_pp": 0.3860667134324718,
+  "hybrid_scene_wins": 18,
+  "scene_count": 30,
+  "median_paired_scene_difference": 0.040462762117385864,
+  "scene_concentration": {
+    "definition": "Five scenes with highest Original endpoint EPE; all 30 scenes retained in every primary metric",
+    "hardest_original_scenes": [
+      "scene_0123",
+      "scene_0129",
+      "scene_0134",
+      "scene_0135",
+      "scene_0142"
+    ],
+    "hardest_five_contribution_to_mean_epe_change": 0.34644825259844464,
+    "other_25_contribution_to_mean_epe_change": 0.08028591573238372,
+    "hardest_five_share_of_net_epe_change_percent": 81.18596501273328,
+    "largest_five_absolute_gaps_share_of_absolute_gap_percent": 75.55618013558318
+  },
+  "models": {
+    "original-non-i": {
+      "status": "COMPLETED",
+      "updates": 30000,
+      "samples_seen": 240000,
+      "scheduler_last_epoch": 30000,
+      "finite_model_optimizer": true,
+      "process_seconds": 76772.65130045824,
+      "finished_utc": "2026-11-09T03:39:27.764027+00:00",
+      "peak_allocated_mib": 14449.56103515625,
+      "peak_reserved_mib": 15690.0,
+      "endpoint_metrics": {
+        "mean_scene_epe": 2.3648221646746,
+        "bad1": 27.925084813435873,
+        "bad3": 10.68895048002402,
+        "bad5": 7.383900507166982
+      }
+    },
+    "hybrid-b": {
+      "status": "COMPLETED",
+      "updates": 30000,
+      "samples_seen": 240000,
+      "scheduler_last_epoch": 30000,
+      "finite_model_optimizer": true,
+      "process_seconds": 77198.5637248233,
+      "finished_utc": "2026-11-09T03:46:33.977401+00:00",
+      "peak_allocated_mib": 14502.87353515625,
+      "peak_reserved_mib": 15740.0,
+      "endpoint_metrics": {
+        "mean_scene_epe": 1.9380879963437716,
+        "bad1": 29.02038491566976,
+        "bad3": 10.302883766591549,
+        "bad5": 6.371583759501421
+      }
+    }
+  },
+  "limitations": [
+    "One training seed; scenes are not independent training replicates",
+    "Comparison tests the entire B addition, not a uniquely spiking mechanism",
+    "All 30 Dev scenes retained; fixed 30k endpoint; no Test/confirmation access"
+  ]
+}

@@ -1,0 +1,112 @@
+{
+  "endpoint_audits": {
+    "original-non-i": {
+      "status": "passed",
+      "frozen_source": "bd52f3c6e77c611141ff4ed570fa9d22ebbaeaeeb76ffb1980e0f4062d58387f",
+      "named_and_last_state": "exact",
+      "checkpoint_files": {
+        "last.pt": {
+          "bytes": 146134429,
+          "sha256": "24cfe452c7b9cbe19f797b181069a5aa890b250717743db7c79b7d172aa674a3"
+        },
+        "step-30000.pt": {
+          "bytes": 146134429,
+          "sha256": "24cfe452c7b9cbe19f797b181069a5aa890b250717743db7c79b7d172aa674a3"
+        }
+      },
+      "retained_7500_checkpoint": {
+        "sha256": "586c5b8aafb82590bd52c13f725981580608f12628095b75035a23839b1e9b22",
+        "bytes": 146134429
+      },
+      "complete_dev_evaluations": {
+        "updates": [
+          0,
+          250,
+          500,
+          1000,
+          1500,
+          2500,
+          5000,
+          7500,
+          10000,
+          12500,
+          15000,
+          17500,
+          20000,
+          22500,
+          25000,
+          27500,
+          30000
+        ],
+        "frames_each": 60,
+        "scenes_each": 30
+      },
+      "homogeneous_execution_policy_from_initialization": true,
+      "fresh_start_update": 0,
+      "runner_exit_code": 0
+    },
+    "hybrid-b": {
+      "status": "passed",
+      "frozen_source": "bd52f3c6e77c611141ff4ed570fa9d22ebbaeaeeb76ffb1980e0f4062d58387f",
+      "named_and_last_state": "exact",
+      "checkpoint_files": {
+        "last.pt": {
+          "bytes": 146259549,
+          "sha256": "f94464923e5fe04e9cb359b77599c65ded4c3e922b495046ed80d1bae4855b2f"
+        },
+        "step-30000.pt": {
+          "bytes": 146259549,
+          "sha256": "f94464923e5fe04e9cb359b77599c65ded4c3e922b495046ed80d1bae4855b2f"
+        }
+      },
+      "retained_7500_checkpoint": {
+        "sha256": "f1772c8fec72c67c7145965108bcee51afc887f03491559efda16d01a6505e6a",
+        "bytes": 146259485
+      },
+      "complete_dev_evaluations": {
+        "updates": [
+          0,
+          250,
+          500,
+          1000,
+          1500,
+          2500,
+          5000,
+          7500,
+          10000,
+          12500,
+          15000,
+          17500,
+          20000,
+          22500,
+          25000,
+          27500,
+          30000
+        ],
+        "frames_each": 60,
+        "scenes_each": 30
+      },
+      "homogeneous_execution_policy_from_initialization": true,
+      "fresh_start_update": 0,
+      "runner_exit_code": 0
+    }
+  },
+  "preflight": {
+    "status": "passed",
+    "cpu_tests": 17,
+    "native_initial_tensor_count": 348,
+    "initial_prediction_max_abs": 0.0,
+    "native_and_recovery": {
+      "original-non-i": {
+        "native_status": "PREFLIGHT_COMPLETED",
+        "restore_status": "passed"
+      },
+      "hybrid-b": {
+        "native_status": "PREFLIGHT_COMPLETED",
+        "restore_status": "passed"
+      }
+    }
+  },
+  "raw_evidence_retention": "Complete JSONL logs, checkpoint files and frozen source archive retained outside Git. This export contains reviewed summaries, configuration, checksums and figures.",
+  "export_formatting": "CSV line endings and SVG trailing whitespace normalized for Git; numeric values and PNG figures unchanged."
+}

@@ -1,0 +1,245 @@
+{
+  "protocol_revision": "28ca495f0b00e750735d38fe861cf9e15712b833",
+  "source_identity": "bd52f3c6e77c611141ff4ed570fa9d22ebbaeaeeb76ffb1980e0f4062d58387f",
+  "models": {
+    "original-non-i": {
+      "study": "original-hybrid-b-npu-30000-v1",
+      "backend": "npu",
+      "model": "original-non-i",
+      "arm": "original",
+      "seed": 1234,
+      "placement_seed": null,
+      "augmentation_seed": 1234,
+      "updates": 30000,
+      "schedule_total": 30000,
+      "effective_batch": 8,
+      "physical_batch": 4,
+      "accumulation": 2,
+      "world_size": 1,
+      "gradient_reduction": "none_single_device_valid_count_weighted_two_microbatch_accumulation",
+      "augmentation": "hv",
+      "eval_updates": [
+        0,
+        250,
+        500,
+        1000,
+        1500,
+        2500,
+        5000,
+        7500,
+        10000,
+        12500,
+        15000,
+        17500,
+        20000,
+        22500,
+        25000,
+        27500,
+        30000
+      ],
+      "prefetch_depth": 2,
+      "prefetch_threads": 2,
+      "manifest_sha256": "bad4369b6fd8b0cdf871a20b1727c2d9b59733a16bd33f75904227bdfef4510a",
+      "initial_state_sha256": "8ceac15b09ce188f9ee52ad5a8eca8e68727cbbb2887a012874d7246dc6495ca",
+      "train_iterations": 16,
+      "dev_iterations": 32,
+      "dtype": "float32",
+      "optimizer": {
+        "name": "AdamW",
+        "max_lr": 0.0002,
+        "betas": [
+          0.9,
+          0.999
+        ],
+        "amsgrad": false,
+        "weight_decay": 1e-05,
+        "eps": 1e-08,
+        "foreach": false,
+        "fused": false,
+        "gradient_clip": 1.0
+      },
+      "scheduler": {
+        "name": "OneCycleLR",
+        "total_steps": 30000,
+        "pct_start": 0.01,
+        "cycle_momentum": false,
+        "anneal_strategy": "linear",
+        "div_factor": 25.0,
+        "final_div_factor": 10000.0
+      },
+      "execution": {
+        "deterministic_algorithms": false,
+        "cudnn_deterministic": false,
+        "cudnn_benchmark": false,
+        "hccl_deterministic": "false"
+      },
+      "loss_implementation": "native_boolean_indexed_masked_mean",
+      "diagnostic_every": 100,
+      "checkpoint_every": 500,
+      "status_every": 25,
+      "initial_native_state_sha256": "8ceac15b09ce188f9ee52ad5a8eca8e68727cbbb2887a012874d7246dc6495ca",
+      "shared_state_sha256": "2085df6ea20073c3a9804d79f6baee94e8e9bfe41facda47e3f292fd3cc9394d",
+      "device_count": 1,
+      "bad3_unit": "percent",
+      "input_pipeline": {
+        "mode": "preload",
+        "budget_bytes": 12884901888,
+        "workers": 2,
+        "prefetch_depth": 2,
+        "spike_host_dtype": "uint8"
+      }
+    },
+    "hybrid-b": {
+      "study": "original-hybrid-b-npu-30000-v1",
+      "backend": "npu",
+      "model": "hybrid-b",
+      "arm": "B",
+      "seed": 1234,
+      "placement_seed": 2017,
+      "augmentation_seed": 1234,
+      "updates": 30000,
+      "schedule_total": 30000,
+      "effective_batch": 8,
+      "physical_batch": 4,
+      "accumulation": 2,
+      "world_size": 1,
+      "gradient_reduction": "none_single_device_valid_count_weighted_two_microbatch_accumulation",
+      "augmentation": "hv",
+      "eval_updates": [
+        0,
+        250,
+        500,
+        1000,
+        1500,
+        2500,
+        5000,
+        7500,
+        10000,
+        12500,
+        15000,
+        17500,
+        20000,
+        22500,
+        25000,
+        27500,
+        30000
+      ],
+      "prefetch_depth": 2,
+      "prefetch_threads": 2,
+      "manifest_sha256": "bad4369b6fd8b0cdf871a20b1727c2d9b59733a16bd33f75904227bdfef4510a",
+      "initial_state_sha256": "b37335857fd34f9f5aaa1cf203f906304f7edbd965447ff7dad3953172d47bd4",
+      "train_iterations": 16,
+      "dev_iterations": 32,
+      "dtype": "float32",
+      "optimizer": {
+        "name": "AdamW",
+        "max_lr": 0.0002,
+        "betas": [
+          0.9,
+          0.999
+        ],
+        "amsgrad": false,
+        "weight_decay": 1e-05,
+        "eps": 1e-08,
+        "foreach": false,
+        "fused": false,
+        "gradient_clip": 1.0
+      },
+      "scheduler": {
+        "name": "OneCycleLR",
+        "total_steps": 30000,
+        "pct_start": 0.01,
+        "cycle_momentum": false,
+        "anneal_strategy": "linear",
+        "div_factor": 25.0,
+        "final_div_factor": 10000.0
+      },
+      "execution": {
+        "deterministic_algorithms": false,
+        "cudnn_deterministic": false,
+        "cudnn_benchmark": false,
+        "hccl_deterministic": "false"
+      },
+      "loss_implementation": "native_boolean_indexed_masked_mean",
+      "diagnostic_every": 100,
+      "checkpoint_every": 500,
+      "status_every": 25,
+      "initial_native_state_sha256": "8ceac15b09ce188f9ee52ad5a8eca8e68727cbbb2887a012874d7246dc6495ca",
+      "shared_state_sha256": "2085df6ea20073c3a9804d79f6baee94e8e9bfe41facda47e3f292fd3cc9394d",
+      "device_count": 1,
+      "bad3_unit": "percent",
+      "input_pipeline": {
+        "mode": "preload",
+        "budget_bytes": 12884901888,
+        "workers": 2,
+        "prefetch_depth": 2,
+        "spike_host_dtype": "uint8"
+      }
+    }
+  },
+  "environments": {
+    "original-non-i": [
+      {
+        "python": "3.11.14 (main, Feb 26 2026, 04:48:50) [GCC 11.4.0]",
+        "torch": "2.9.0+cpu",
+        "torch_npu": "2.9.0.post1+gitdc51c2d",
+        "npu_name": "Ascend910B2C",
+        "device_count": 1,
+        "precision": {
+          "dtype": "float32",
+          "conv_allow_hf32": false,
+          "matmul_allow_hf32": false,
+          "mixed_precision": false,
+          "jit_compile": false,
+          "deterministic_algorithms": false,
+          "cudnn_deterministic": false,
+          "cudnn_benchmark": false,
+          "hccl_deterministic": "false"
+        }
+      }
+    ],
+    "hybrid-b": [
+      {
+        "python": "3.11.14 (main, Feb 26 2026, 04:48:50) [GCC 11.4.0]",
+        "torch": "2.9.0+cpu",
+        "torch_npu": "2.9.0.post1+gitdc51c2d",
+        "npu_name": "Ascend910B2C",
+        "device_count": 1,
+        "precision": {
+          "dtype": "float32",
+          "conv_allow_hf32": false,
+          "matmul_allow_hf32": false,
+          "mixed_precision": false,
+          "jit_compile": false,
+          "deterministic_algorithms": false,
+          "cudnn_deterministic": false,
+          "cudnn_benchmark": false,
+          "hccl_deterministic": "false"
+        }
+      }
+    ]
+  },
+  "physical_devices": {
+    "original-non-i": 0,
+    "hybrid-b": 1
+  },
+  "native_model_args": {
+    "hidden_dims": [
+      128,
+      128,
+      128
+    ],
+    "context_norm": "batch",
+    "shared_backbone": false,
+    "n_snn_layers": 3,
+    "n_downsample": 2,
+    "corr_levels": 4,
+    "corr_radius": 4,
+    "corr_implementation": "reg",
+    "mixed_precision": false,
+    "feature_encoder": "cnn",
+    "context_encoder": "cnn",
+    "matched_initialization_seed": 1234,
+    "slow_fast_gru": false
+  }
+}
