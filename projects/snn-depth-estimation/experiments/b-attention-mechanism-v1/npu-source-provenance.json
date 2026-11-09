@@ -1,0 +1,16 @@
+{
+  "origin_study": "original-hybrid-b-npu-30000-v1",
+  "origin_source_identity": "bd52f3c6e77c611141ff4ed570fa9d22ebbaeaeeb76ffb1980e0f4062d58387f",
+  "origin_instruction_revision": "28ca495f0b00e750735d38fe861cf9e15712b833",
+  "original_file_sha256": {
+    "projects/snn-depth-estimation/experiments/b-attention-mechanism-v1/npu_backend.py": "1f15c804de436652232bcc7f89ef2a2c8b0a9ca3bf3cda8aec2514c93a95c9d8",
+    "projects/snn-depth-estimation/experiments/b-attention-mechanism-v1/input_pipeline_npu.py": "be4f01529a15b18b6bf004e81e50a663a388e2d304f61a60fd27caf74142e505",
+    "projects/snn-depth-estimation/experiments/b-attention-mechanism-v1/worker_baseline_npu.py": "2547226a4407a027c1c2937022089a86e46539bfb375f6faae795653eba450d3"
+  },
+  "imports": {
+    "npu_backend.py": "unchanged",
+    "input_pipeline_npu.py": "unchanged",
+    "worker_ablation_npu.py": "adapted worker_baseline_npu.py: seed/encoder routing, explicit resume and fixed input policy; native loss, optimizer and evaluation loop retained; historical initialization match is recorded, while fresh per-seed tensor identity is enforced"
+  },
+  "verified_unchanged_dependencies": "All archived core/*.py plus input_pipeline.py, protocol.py, common.py and run_experiment.py match this checkout at import."
+}
