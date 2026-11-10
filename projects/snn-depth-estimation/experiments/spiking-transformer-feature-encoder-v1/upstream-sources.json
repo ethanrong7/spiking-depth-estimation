@@ -1,0 +1,40 @@
+{
+  "spikformer": {
+    "repository": "https://github.com/ZK-Zhou/spikformer",
+    "commit": "621268981827af47aa666c1b5f774de4281d90ad",
+    "path": "imagenet/model.py",
+    "url": "https://raw.githubusercontent.com/ZK-Zhou/spikformer/621268981827af47aa666c1b5f774de4281d90ad/imagenet/model.py",
+    "sha256": "7a77f462eb9958cadb87885cad2515f784faf5d1a24aaca339f7c42e2d4c03f7",
+    "license_path": "LICENSE",
+    "license_status": "upstream file available",
+    "license_sha256": "7a2a84154f0b63dbf8390c3573fa238a56b6f9117a521b60f8fcd8eba0f3c137"
+  },
+  "qkformer": {
+    "repository": "https://github.com/zhouchenlin2096/QKFormer",
+    "commit": "4c7e0356dd535fec683b6a33214ddd2c5b45e56e",
+    "path": "imagenet/qkformer.py",
+    "url": "https://raw.githubusercontent.com/zhouchenlin2096/QKFormer/4c7e0356dd535fec683b6a33214ddd2c5b45e56e/imagenet/qkformer.py",
+    "sha256": "b46f94f5d210a6fedb336305c8075b9cb77402c8d381cbb499fd39379cacdb8e",
+    "license_path": null,
+    "license_status": "No top-level license found; downloaded for local research, not redistributed here"
+  },
+  "meta-spikeformer": {
+    "repository": "https://github.com/BICLab/Spike-Driven-Transformer-V2",
+    "commit": "35f245f4f79acf1a2b3ef22698c58ab05c1ede33",
+    "path": "classification/models.py",
+    "url": "https://raw.githubusercontent.com/BICLab/Spike-Driven-Transformer-V2/35f245f4f79acf1a2b3ef22698c58ab05c1ede33/classification/models.py",
+    "sha256": "c1498bcb4caad45eb3c5976961255b52d9c240859a56b23d31ff2e76df1efee9",
+    "license_path": null,
+    "license_status": "No top-level license found; downloaded for local research, not redistributed here"
+  },
+  "swin": {
+    "repository": "https://github.com/microsoft/Swin-Transformer",
+    "commit": "f82860bfb5225915aca09c3227159ee9e1df874d",
+    "path": "models/swin_transformer.py",
+    "url": "https://raw.githubusercontent.com/microsoft/Swin-Transformer/f82860bfb5225915aca09c3227159ee9e1df874d/models/swin_transformer.py",
+    "sha256": "779c9ad487e2c577eff12a60c7a2f92267e2bb55c68f7bb32c8edad5ad5bd1e1",
+    "license_path": "LICENSE",
+    "license_status": "upstream file available",
+    "license_sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+  }
+}

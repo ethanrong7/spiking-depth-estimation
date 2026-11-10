@@ -2,7 +2,7 @@
 
 Prepared 10 November 2026. Branch: `hybrid-b-experiments`.
 
-**Status: experiment specification and implementation handoff. The four new encoder adapters and launcher are not implemented by this document. No new training has been launched.** The server-agent prompt at the end requests implementation followed by NPU validation and execution.
+**Status: adapters, torch neuron port, single-NPU worker, eight-cell launcher, local tests and CSV exporter are implemented. Tiny CPU checks have passed; native NPU behavior and throughput remain to be validated on the server. No training has been launched from the Mac.** The server-agent prompt at the end executes the existing code; it does not request implementation.
 
 ## 1. Goal and decision
 
@@ -32,9 +32,9 @@ Author implementations and papers:
 - Meta-SpikeFormer / Spike-driven Transformer V2, ICLR 2024: <https://arxiv.org/abs/2404.03663>; <https://github.com/BICLab/Spike-Driven-Transformer-V2>, `classification/models.py`.
 - Swin Transformer, ICCV 2021: <https://arxiv.org/abs/2103.14030>; <https://github.com/microsoft/Swin-Transformer>, `models/swin_transformer.py`.
 
-These are specified stereo adaptations of the full backbone block sequences, not reproductions of their ImageNet experiments. Remove classification heads and global spatial pooling. Preserve defining attention equations, residual placement and upstream neuron settings. Do not approximate every architecture with the same home-made attention block. Retain each upstream license and record the exact imported commit in `UPSTREAM.md` before training; source URLs alone are not version pins.
+These are specified stereo adaptations of the full backbone block sequences, not reproductions of their ImageNet experiments. Remove classification heads and global spatial pooling. Preserve defining attention equations, residual placement and upstream neuron settings. Do not approximate every architecture with the same home-made attention block. Exact commits and file checksums are pinned in `upstream-sources.json` and described in `UPSTREAM.md`. Preparation downloads those files and available licenses into an ignored cache. No manual encoder code construction is needed.
 
-Widths put these in a broadly comparable compact-backbone regime, **not exact parameter or FLOP matching**. Measure encoder, adapter and total trainable parameters separately. Do not silently resize models after seeing Dev rankings. No pretrained weights, classification distillation, auxiliary reconstruction loss, stochastic depth or dropout in this first common-recipe batch; set all dropout/drop-path probabilities to zero in all four adapters. Keep Swin relative-position bias and normal attention scaling, and each SNN's upstream attention scaling.
+Widths put these in a broadly comparable compact-backbone regime, **not exact parameter or FLOP matching**. Measure encoder, adapter and total trainable parameters separately. Do not silently resize models after seeing Dev rankings. No pretrained weights, classification distillation, auxiliary reconstruction loss, stochastic depth or dropout in this first common-recipe batch; set all dropout/drop-path probabilities to zero in all four adapters. Keep Swin relative-position bias and normal attention scaling, and each SNN's upstream attention scaling. The QKFormer adapter corrects its final projection reshape: restore T/B/H/W before the temporal projection neuron, avoiding swapped rectangular axes and cross-sample state. See `UPSTREAM.md`; this is a documented compatibility correction.
 
 ## 3. Stereo integration and temporal input
 
@@ -104,7 +104,7 @@ This reuses the completed NPU data/optimizer/evaluation recipe where applicable.
 | Distribution | world_size=1; one independent job per NPU; no HCCL gradient reduction |
 | Evaluation | Updates 0, 1000, 2500, then every 2500 through 30000; full Dev, native masks, no augmentation; Dev batch 2 |
 | Checkpoints | Recovery every 1000 updates and after evaluation; retain 10000, 20000 and 30000 |
-| Runtime logging | Train summary every 25 updates; no per-step host copies of attention matrices or firing-rate tensors |
+| Runtime logging | Status every 25 updates; compact per-update audit rows; firing activity only on selected preflight updates; no attention-matrix host copies |
 | Data pipeline | Existing uint8 RAM preload, 2 preparation workers, prefetch depth 2; budget up to 12 GiB/process after checking total host RAM |
 | Test split | Do not use for architecture selection or this initial screen |
 
@@ -123,10 +123,10 @@ Existing local references, all present in a fresh checkout:
 - Native model: `projects/snn-depth-estimation/core/spikestereonet.py`.
 - Builder/dataset/evaluation: `projects/snn-depth-estimation/experiments/spiking-transformer-stereo/scripts/run_experiment.py`.
 - Current NPU loop/backend: `projects/snn-depth-estimation/experiments/b-attention-mechanism-v1/worker_ablation_npu.py` and `npu_backend.py`.
-- Current preload: `input_pipeline_npu.py` in that experiment directory; shared input helpers under `experiments/shared-gpu-30k-v1/`.
+- Current preload: `input_pipeline.py` and `input_pipeline_npu.py` in that experiment directory; presentation/common helpers under `experiments/shared-gpu-30k-v1/`.
 - Presentation stream: `projects/snn-depth-estimation/experiments/spiking-attention-placement-phase2/protocol.py`.
 
-The B worker is a reference, **not this batch's executable**: it hard-codes B installation, eight B initialization layouts, a particular physical batch and run checks. Create a new encoder-specific launcher/worker rather than passing new variant strings to the old command. Preserve old experiments and their defaults.
+The B worker is a reference, **not this batch's executable**: it hard-codes B installation, eight B initialization layouts, a particular physical batch and run checks. The new `run_on_npu.py` and `worker_npu.py` implement this batch. Do not pass new variant strings to the old command. Old experiment defaults are unchanged.
 
 Ordinary convolution, linear layers, normalization, pooling, tensor reshaping, softmax and matrix products should use PyTorch operations through the installed `torch_npu` backend. Their on-device support and performance must be checked. Author CuPy/CUDA multi-step neuron implementations need a torch/NPU equivalent that preserves forward dynamics and surrogate gradients. Disable optional Swin fused CUDA window kernels and use its normal tensor path. Do not globally monkey-patch CUDA to mean NPU or silently fall back to CPU operations.
 
@@ -137,7 +137,7 @@ Before production, perform one focused validation pass per architecture:
 - Run a short learning/throughput preflight, nominally 200 optimizer updates, and a checkpoint-resume check. Record loss, firing activity, peak NPU memory, input-wait and steady-state step time. Use separate preflight output directories; production starts fresh at update zero.
 - Check all four architectures' normalization modes and ensure model.eval() actually freezes new BN during Dev. If checkpointing is used, include its forward/gradient/state/statistics check here.
 
-This preflight is for correctness and feasibility, not Dev-based ranking or a hyperparameter search. A broken port must be fixed before launching it; do not replace it with a simplified model bearing the same name. No extra pilot-seed sweep is included. If a configuration needs a substantive numerical or optimization change, record the revised protocol before fresh production runs, rather than changing it midway.
+This preflight is for correctness and feasibility, not Dev-based ranking or a hyperparameter search. A broken port must be fixed before launching it; do not replace it with a simplified model bearing the same name. Preflight runs one seed (1234) for each of the four encoders; production runs both seeds. It includes a stop/resume at update 2 and finishes at update 200. The second seed uses the same admitted implementation/configuration; its worker also verifies the NPU software/hardware/precision against admission. No extra pilot-seed sweep is included. If a configuration needs a substantive numerical or optimization change, record the revised protocol before fresh production runs, rather than changing it midway.
 
 Check actual NPU allocation, installed PyTorch/torch_npu/CANN versions and host RAM. Reuse the working vendor environment; do not install a generic CUDA PyTorch wheel over it. With eight preload processes, verify the combined memory budget; a shared read-only cache or smaller preload budgets may be used without changing sample order or numerical input. Record the choice. Performance is not established until measured on this server.
 
@@ -158,7 +158,7 @@ projects/snn-depth-estimation/experiments/spiking-transformer-feature-encoder-v1
     figures/
 ```
 
-Each production cell writes `metadata.json`, `status.json`, `train.jsonl`, `eval.jsonl`, `stdout.log`, `stderr.log`, a final `result.json`, and a `checkpoints/` directory. Keep raw outputs and weights ignored by Git. Allow an explicit `--output-root` override; no personal paths or dependency on the Research monorepo, Downloads or historical cluster storage.
+Each production cell writes `metadata.json`, `status.json`, `train.jsonl`, `eval.jsonl`, `stdout.log`, `stderr.log`, a final `result.json`, and a `checkpoints/` directory (`last.pt` plus retained named endpoints). Keep raw outputs and weights ignored by Git. Allow an explicit `--output-root` override; no personal paths or dependency on the Research monorepo, Downloads or historical cluster storage.
 
 Record source commit plus effective configuration, imported upstream commits/licenses, device identity, seed details, actual batch/accumulation, precision, neuron parameters, normalization policy, parameter counts and preprocessing. Record any source patch used for execution. No preflight result is a final endpoint.
 
@@ -180,65 +180,89 @@ Use the native metric aggregation: mean-scene EPE, pooled valid-pixel bad3. Repo
 
 Use an average relative EPE improvement of approximately 3% or more over Swin, positive in both seeds, as a pragmatic follow-up signal, not a significance test. Also inspect scene concentration and bad3. Every valid run continues to 30k regardless of interim rank. No automatic 50k/80k extension or best-checkpoint replacement of the primary endpoint.
 
-## 7. Copy-paste prompt for the NPU server agent
+## 7. Execute the implemented batch
+
+From the repository root, in the working Ascend environment:
+
+```bash
+python projects/snn-depth-estimation/experiments/spiking-transformer-feature-encoder-v1/run_on_npu.py \
+  --data-root /path/to/synthetic-dataset \
+  --devices 0 1 2 3 4 5 6 7 \
+  --execute
+```
+
+Replace the path and physical IDs with the actual server allocation. Preparation downloads the four pinned author source files automatically, verifies checksums and records the committed local implementation. It creates fresh shared native initializations. The four preflights must pass before any of the eight production runs starts.
+
+- Omit `--execute`: prepare sources, configurations and initializations without using an NPU.
+- Add `--preflight-only --execute`: stop after the four native NPU preflights.
+- Add `--resume --execute`: continue the same batch; completed production cells are skipped and incomplete cells restore their own checkpoints. Remove any deliberately created `pause.request` before resuming.
+- If physical batch 2 fails memory admission, use `--physical-batch 1` with a **new** `--output-root`; all four preflights and all eight production cells then use batch 1, accumulation 8. No automatic architecture downgrade or per-arm batch adjustment occurs.
+- `--preload-gib` changes the per-process cache budget for all cells; `--output-root` relocates outputs. Check host memory for eight preload processes. Defaults are in the table above.
+- `--source-cache /path/to/cache` selects a reusable pinned-source cache. For an offline server, copy a prepared cache containing the four `.py` files and the available `.LICENSE` files, and pass `--offline`. Workers use the checked copy inside their batch output, without network access.
+- The launcher permits 1–8 device IDs; fewer devices queue the same eight cells. With eight IDs, the documented slot mapping applies.
+- Prepared sources must match their committed versions. Do not edit experiment dependencies while the batch is running or silently resume with changed code.
+
+Local tiny checks and graph-ready result export:
+
+```bash
+python projects/snn-depth-estimation/experiments/spiking-transformer-feature-encoder-v1/test_encoders.py \
+  --source-cache projects/snn-depth-estimation/experiments/spiking-transformer-feature-encoder-v1/outputs/upstream-cache -v
+
+python projects/snn-depth-estimation/experiments/spiking-transformer-feature-encoder-v1/summarize.py \
+  --output-root projects/snn-depth-estimation/experiments/spiking-transformer-feature-encoder-v1/outputs/encoder-screen-npu-v1
+```
+
+The neuron port uses sigmoid surrogate alpha 4, matching the pinned authors' SpikingJelly default. Attention-block forward/gradient comparisons use the author blocks with the reference torch neurons. Rectangular Swin keeps author attention, MLP and merging, adding per-stage padding/masks. CPU checks do not establish NPU numerical parity or speed; `validate_npu.py` and native preflights run there.
+
+## 8. Copy-paste prompt for the NPU server agent
 
 ```text
-Work in the standalone spiking-depth-estimation checkout on branch
-hybrid-b-experiments. Read AGENTS.md and:
+Use the standalone spiking-depth-estimation checkout on hybrid-b-experiments.
+Read AGENTS.md and:
 projects/snn-depth-estimation/experiments/spiking-transformer-feature-encoder-v1/spiking-transformer-feature-encoder-NPU.md
 
-Implement and run that eight-NPU experiment: Spikformer, QKFormer,
-Meta-SpikeFormer and conventional Swin, each with seeds 1234 and 2345,
-using SpikeStereoNet Original non-I as the surrounding stereo architecture.
-This document is a specification; the new encoder adapters and launcher still
-need to be created. The old Hybrid B launcher does not execute this experiment.
+The encoder adapters, worker, launcher, tests and exporter are already implemented.
+Do not reconstruct the Python files or replace the published backbone blocks.
+Fetch and safely fast-forward hybrid-b-experiments to the implementation commit,
+leaving unrelated local work intact. Report a conflict instead of discarding it.
 
-Preserve unrelated work. Inspect the current checkout and fetch/fast-forward
-the requested branch only if safe; never discard local changes. Import author
-implementations with pinned commits and licenses. Implement the specified full
-block sequences, T5 x 10-bin input adapter, common dense readout, fresh per-seed
-initialization and normalization/state rules. Replace only fnet. No Hybrid B,
-+I, v0 or cost-filter branch. All four systems train end to end from scratch.
+Run the documented four-architecture/two-seed study using eight allocated NPUs:
+Spikformer, QKFormer, Meta-SpikeFormer and Swin, each at seeds 1234 and 2345.
+Find the actual dataset root and available NPU IDs on this server. Reuse its
+working torch_npu/CANN environment. Do not interrupt unrelated jobs.
 
-Use the checked-in native model, dataset, loss, evaluation, NPU backend and
-preloading helpers listed in the document. Write new encoder-specific model
-adapters, worker, launcher and CSV summarizer. Do not alter old run defaults.
-The launcher must support preparation, preflight-only, execute and explicit
-resume modes, accept data-root/output-root/devices arguments, and reject
-accidental reuse of another run's output directory.
+From the repository root execute:
+python projects/snn-depth-estimation/experiments/spiking-transformer-feature-encoder-v1/run_on_npu.py --data-root ACTUAL_DATA_ROOT --devices ACTUAL_EIGHT_NPU_IDS --execute
 
-Keep all 50 sensor bins. Use the documented five chronological 10-bin chunks,
-not repeated static inputs. Swin gets the same chunks and ordered fusion.
-Preserve the native quarter-resolution, 256-channel descriptor interface.
-Preserve author neuron equations/surrogate derivatives when replacing CuPy
-with NPU-compatible torch operations. Keep native BN behavior outside fnet,
-but let the new encoder BN learn. Ensure reset and checkpoint recomputation
-cannot leak state or update BN statistics twice.
+Replace the two uppercase placeholders with the actual path and eight separate
+physical device IDs. The launcher prepares pinned author sources, initializes
+shared native weights, validates neurons, runs four 200-update preflights with
+a resume check, and admits eight fresh independent 30k runs only after success.
+No manual source construction is needed. If network access is unavailable,
+use a prepared source cache and the documented --offline option.
 
-Find the configured dataset root and eight allocated NPU IDs on this machine;
-ask only if required resource details cannot be found. Do not guess paths or
-interrupt unrelated jobs. Use the existing working torch_npu/CANN environment.
-Validate the implementation and run the bounded preflights described in the
-specification. Profile memory and input waiting. Use physical batch 2 and
-accumulation 4, or batch 1 and accumulation 8 for ALL arms if memory requires it.
-Maintain effective batch 8, FP32 and the fixed 30k schedule. Do not choose a
-weaker encoder to make a preflight pass.
+Keep the specified T5 x 10-bin input, readout, fresh weights, source identities,
+FP32, paired data streams, effective batch 8 and 30k schedule. The worker trains
+new encoder BN while preserving native normalization elsewhere. No Hybrid B,
++I, v0 or cost-filter module is installed.
 
-Once code and preflights pass, record an exact experiment-code Git commit and
-resolved configurations before production. Commit only this experiment's
-implementation/configuration/tests/docs, leaving unrelated changes untouched.
-Run eight fresh jobs concurrently, one per allocated NPU, to 30,000 updates.
-The source running each job must remain fixed. Resume failures from their own
-checkpoints and preserve failure logs; do not silently restart or change the
-architecture/hyperparameters. Report a substantive blocker rather than
-launching an invalid arm. No extra architectures, tuning sweeps or longer runs.
+If memory admission fails at physical batch 2, report the failure and rerun
+with --physical-batch 1 and a new output root for the whole matrix; do not mix
+microbatch sizes. Check the combined preload memory and use a recorded common
+--preload-gib adjustment if necessary. Do not shrink an encoder, change its
+mathematics, tune against Dev rankings or extend beyond 30k without a new request.
 
-Write graph-ready logs, checkpoints, per-scene evaluations and summaries under
-the document's outputs/encoder-screen-npu-v1 location (or a recorded explicit
-override). Preserve fixed 30k endpoints and all learning curves, separating
-seeds. Report EPE, pooled bad3, scene wins against Swin, parameters, memory and
-measured timing. Compare historical Original only as labelled context. Do not
-claim an encoder win proves that spikes alone are responsible. Report the
-implementation commit, effective settings, preflight results, launch commands,
-output paths and final completion status.
+Monitor the batch and resume interrupted cells using --resume --execute with
+identical arguments and the same source. Preserve failure logs. A code/numerical
+failure is a blocker to report, not permission to substitute an approximation.
+All valid production cells finish at 30k regardless of interim rank.
+
+Outputs default to:
+projects/snn-depth-estimation/experiments/spiking-transformer-feature-encoder-v1/outputs/encoder-screen-npu-v1
+Run summarize.py --output-root THAT_PATH for partial/final graph-ready CSVs.
+Report the implementation commit, effective settings, preflight results,
+launch command, output paths and final EPE/bad3 per seed, scene wins vs Swin,
+parameter counts and measured timing. Historical Original is labelled context,
+not a current paired baseline. Do not interpret an encoder win as proof that
+spikes alone caused it. Do not commit logs or checkpoints.
 ```
