@@ -1,0 +1,32 @@
+{
+  "status": "COMPLETED",
+  "updates": 30000,
+  "samples_seen": 240000,
+  "scheduler_last_epoch": 30000,
+  "evaluated": [
+    0,
+    250,
+    500,
+    1000,
+    1500,
+    2500,
+    5000,
+    7500,
+    10000,
+    12500,
+    15000,
+    17500,
+    20000,
+    22500,
+    25000,
+    27500,
+    30000
+  ],
+  "finite_model_optimizer": true,
+  "process_seconds": 77341.77421566844,
+  "endpoint_kind": "full_schedule",
+  "peak_allocated_mib": 14502.87353515625,
+  "peak_reserved_mib": 15740.0,
+  "world_size": 1,
+  "source_identity": "362cf2fcd23231035a219ba281b11d85772d0c3458c1c243fd4370ffd913ded9"
+}

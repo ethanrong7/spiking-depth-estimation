@@ -1,0 +1,16 @@
+[
+  {
+    "seed": 1234,
+    "sha256": "b37335857fd34f9f5aaa1cf203f906304f7edbd965447ff7dad3953172d47bd4",
+    "historical_reference_sha256": "b37335857fd34f9f5aaa1cf203f906304f7edbd965447ff7dad3953172d47bd4",
+    "historical_reference_matches": true,
+    "torch": "2.9.0+cpu"
+  },
+  {
+    "seed": 2345,
+    "sha256": "b5444d086fa7889e7186b41f058b96d5067d765916735ac52682663b02240a27",
+    "historical_reference_sha256": null,
+    "historical_reference_matches": null,
+    "torch": "2.9.0+cpu"
+  }
+]

@@ -1,0 +1,52 @@
+{
+  "study": "hybrid-b-ablation-911-NPU",
+  "cells": [
+    {
+      "seed": 1234,
+      "variant": "linear-identity",
+      "device": 0
+    },
+    {
+      "seed": 1234,
+      "variant": "signed-surrogate",
+      "device": 1
+    },
+    {
+      "seed": 1234,
+      "variant": "linear-surrogate",
+      "device": 2
+    },
+    {
+      "seed": 1234,
+      "variant": "signed-identity",
+      "device": 3
+    },
+    {
+      "seed": 2345,
+      "variant": "linear-identity",
+      "device": 4
+    },
+    {
+      "seed": 2345,
+      "variant": "signed-surrogate",
+      "device": 5
+    },
+    {
+      "seed": 2345,
+      "variant": "linear-surrogate",
+      "device": 6
+    },
+    {
+      "seed": 2345,
+      "variant": "signed-identity",
+      "device": 7
+    }
+  ],
+  "data_root": "/datasets/SpikeStereoNet/Synthetic",
+  "manifest": "/workspace/repository/configs/synthetic-split.json",
+  "updates": 30000,
+  "schedule_total": 30000,
+  "physical_batch": 4,
+  "accumulation": 2,
+  "device_count_per_model": 1
+}

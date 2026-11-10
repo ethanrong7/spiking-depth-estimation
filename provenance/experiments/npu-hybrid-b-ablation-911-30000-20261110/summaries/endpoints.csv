@@ -1,0 +1,9 @@
+study,backend,seed,variant,forward_rule,backward_rule,update,mean_scene_epe,bad3_percent,reuse,source_identity
+hybrid-b-ablation-911-NPU-a4,npu,1234,linear-identity,linear,identity,30000,2.2006756593783696,10.327967058618864,False,362cf2fcd23231035a219ba281b11d85772d0c3458c1c243fd4370ffd913ded9
+hybrid-b-ablation-911-NPU-a4,npu,1234,signed-surrogate,signed,surrogate,30000,2.55959087262551,10.630500232676665,False,362cf2fcd23231035a219ba281b11d85772d0c3458c1c243fd4370ffd913ded9
+hybrid-b-ablation-911-NPU-a4,npu,1234,linear-surrogate,linear,surrogate,30000,2.6909885476032893,10.559350355466206,False,362cf2fcd23231035a219ba281b11d85772d0c3458c1c243fd4370ffd913ded9
+hybrid-b-ablation-911-NPU-a4,npu,1234,signed-identity,signed,identity,30000,2.2524425665537517,10.30248355368773,False,362cf2fcd23231035a219ba281b11d85772d0c3458c1c243fd4370ffd913ded9
+hybrid-b-ablation-911-NPU-a4,npu,2345,linear-identity,linear,identity,30000,2.380936440328757,10.682966981331507,False,362cf2fcd23231035a219ba281b11d85772d0c3458c1c243fd4370ffd913ded9
+hybrid-b-ablation-911-NPU-a4,npu,2345,signed-surrogate,signed,surrogate,30000,2.0927140494187673,10.664150536060333,False,362cf2fcd23231035a219ba281b11d85772d0c3458c1c243fd4370ffd913ded9
+hybrid-b-ablation-911-NPU-a4,npu,2345,linear-surrogate,linear,surrogate,30000,2.2116943821310997,10.58981721351544,False,362cf2fcd23231035a219ba281b11d85772d0c3458c1c243fd4370ffd913ded9
+hybrid-b-ablation-911-NPU-a4,npu,2345,signed-identity,signed,identity,30000,2.3156932180126506,10.095367004474005,False,362cf2fcd23231035a219ba281b11d85772d0c3458c1c243fd4370ffd913ded9
